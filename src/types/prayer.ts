@@ -6,6 +6,8 @@ export interface Prayer {
   flameColor: string;
 }
 
+export type Language = "vi" | "en" | "ko";
+
 export const STATS = {
   total: 12405,
   today: 8230,

@@ -16,7 +16,8 @@ const manrope = Manrope({
 
 export const metadata: Metadata = {
   title: "HLE Prayer — Thắp Nến Nguyện Cầu",
-  description: "Gửi lời nguyện đến đội tuyển Hanwha Life Esports — Beyond the Challenge",
+  description:
+    "Trang nguyện cầu cho Hanwha Life Esports với roster riêng, lời cầu nguyện sẵn, âm nhạc và 3 ngôn ngữ Việt - Anh - Hàn.",
 };
 
 export default function RootLayout({

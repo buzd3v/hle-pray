@@ -1,13 +1,15 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Flame, Trophy } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowRight, Flame, Music2, Pause, Play, Sparkles, Trophy, UserX } from "lucide-react";
 import { ParticleBackground } from "@/components/ParticleBackground";
 import { NavBar } from "@/components/NavBar";
 import { ArchDecoration, FlameIcon, HLElogo } from "@/components/Decorations";
 import { usePrayers } from "@/hooks/usePrayers";
+import { ACHIEVEMENT_CARDS, DEFAULT_LANGUAGE, LANGUAGE_OPTIONS, MUSIC_TRACKS, ROSTER_MEMBERS, SITE_COPY } from "@/lib/siteContent";
 import { STATS, SAMPLE_PRAYERS } from "@/types/prayer";
+import type { Language, Prayer } from "@/types/prayer";
 
 const FLOOR_CANDLES = [
   { id: 0, left: 8, delay: 0.1, size: 0.7 },
@@ -40,289 +42,845 @@ const FLOOR_CANDLES = [
   { id: 27, left: 88.6, delay: 0.9, size: 0.5 },
 ];
 
-function formatTime(date: Date) {
-  const now = Date.now();
-  const diff = now - date.getTime();
-  const min = Math.floor(diff / 60000);
-  if (min < 1) return "vừa xong";
-  if (min < 60) return `${min} phút trước`;
-  const h = Math.floor(min / 60);
-  if (h < 24) return `${h} giờ trước`;
-  return `${Math.floor(h / 24)} ngày trước`;
-}
-
-const TOP_PRAYERS = [
-  { name: "Zeus Fanclub", count: 847 },
-  { name: "Viper Supporter", count: 623 },
-  { name: "Peanut Lover", count: 511 },
-  { name: "Zeka Stan", count: 398 },
-  { name: "HLE Vietnam", count: 276 },
+const TOP_SUPPORTERS = [
+  { name: "HLE Vietnam", count: 847 },
+  { name: "Peanut Loyalists", count: 623 },
+  { name: "Viper Faithful", count: 511 },
+  { name: "Zeka Enjoyers", count: 398 },
+  { name: "Beyond the Challenge", count: 276 },
 ];
 
 const MAX_CHARS = 500;
 
-export default function HomePage() {
-  const [name, setName] = useState("");
-  const [content, setContent] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSuccess, setIsSuccess] = useState(false);
-  const { prayers, addPrayer } = usePrayers();
+const ROLE_LABELS: Record<Language, Record<string, string>> = {
+  vi: {
+    top: "Đường trên",
+    jungle: "Rừng",
+    mid: "Giữa",
+    adc: "Xạ thủ",
+    support: "Hỗ trợ",
+  },
+  en: {
+    top: "Top",
+    jungle: "Jungle",
+    mid: "Mid",
+    adc: "ADC",
+    support: "Support",
+  },
+  ko: {
+    top: "탑",
+    jungle: "정글",
+    mid: "미드",
+    adc: "원딜",
+    support: "서포터",
+  },
+};
 
-  const charCount = content.length;
-  const canSubmit = content.trim().length > 0;
+function formatTime(date: Date, language: Language) {
+  const diff = Date.now() - date.getTime();
+  const minutes = Math.floor(diff / 60000);
+  const hours = Math.floor(minutes / 60);
+  const days = Math.floor(hours / 24);
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!canSubmit || isSubmitting) return;
-    setIsSubmitting(true);
-    addPrayer(name, content.trim());
-    await new Promise((r) => setTimeout(r, 1000));
-    setIsSubmitting(false);
-    setIsSuccess(true);
-    await new Promise((r) => setTimeout(r, 2200));
-    setIsSuccess(false);
-    setName("");
-    setContent("");
+  if (language === "en") {
+    if (minutes < 1) return "just now";
+    if (minutes < 60) return `${minutes} min ago`;
+    if (hours < 24) return `${hours} hr ago`;
+    return `${days} d ago`;
   }
 
+  if (language === "ko") {
+    if (minutes < 1) return "방금";
+    if (minutes < 60) return `${minutes}분 전`;
+    if (hours < 24) return `${hours}시간 전`;
+    return `${days}일 전`;
+  }
+
+  if (minutes < 1) return "vừa xong";
+  if (minutes < 60) return `${minutes} phút trước`;
+  if (hours < 24) return `${hours} giờ trước`;
+  return `${days} ngày trước`;
+}
+
+function getInitialLanguage(): Language {
+  if (typeof window === "undefined") return DEFAULT_LANGUAGE;
+  const stored = window.localStorage.getItem("hle-pray-language");
+  if (stored === "vi" || stored === "en" || stored === "ko") return stored;
+  return DEFAULT_LANGUAGE;
+}
+
+function getInitialMuted(): boolean {
+  if (typeof window === "undefined") return true;
+  const stored = window.localStorage.getItem("hle-pray-muted");
+  return stored ? stored === "true" : true;
+}
+
+export default function HomePage() {
+  const [language, setLanguage] = useState<Language>(DEFAULT_LANGUAGE);
+  const [isMuted, setIsMuted] = useState(true);
+  const [activeTrack, setActiveTrack] = useState<"ambient" | "celebration">("ambient");
+  const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+  const [customText, setCustomText] = useState("");
+  const [name, setName] = useState("");
+  const [anonymous, setAnonymous] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+  const [particleTrigger, setParticleTrigger] = useState(false);
+  const { prayers, addPrayer } = usePrayers();
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const trackResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    setLanguage(getInitialLanguage());
+    setIsMuted(getInitialMuted());
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem("hle-pray-language", language);
+  }, [language]);
+
+  useEffect(() => {
+    window.localStorage.setItem("hle-pray-muted", String(isMuted));
+  }, [isMuted]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    const track = MUSIC_TRACKS.find((item) => item.id === activeTrack) ?? MUSIC_TRACKS[0];
+    audio.src = track.src;
+    audio.loop = activeTrack === "ambient";
+    audio.muted = isMuted;
+    audio.volume = 0.75;
+
+    const playPromise = audio.play();
+    if (playPromise) {
+      playPromise.catch(() => {
+        // Browsers may block autoplay until the user interacts with the page.
+      });
+    }
+  }, [activeTrack, isMuted]);
+
+  useEffect(() => {
+    return () => {
+      if (trackResetTimeoutRef.current) {
+        clearTimeout(trackResetTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const copy = SITE_COPY[language];
+  const presets = copy.prayer.presets;
   const allPrayers = [...prayers, ...SAMPLE_PRAYERS].slice(0, 20);
 
+  const handleLanguageChange = (nextLanguage: Language) => {
+    setLanguage(nextLanguage);
+  };
+
+  const handleToggleMuted = () => {
+    setIsMuted((value) => !value);
+  };
+
+  const handleCandleLight = () => {
+    setParticleTrigger(true);
+    setTimeout(() => setParticleTrigger(false), 100);
+    setSubmitted(true);
+    setActiveTrack("celebration");
+
+    if (trackResetTimeoutRef.current) {
+      clearTimeout(trackResetTimeoutRef.current);
+    }
+
+    trackResetTimeoutRef.current = setTimeout(() => {
+      setActiveTrack("ambient");
+      setSubmitted(false);
+    }, 6000);
+  };
+
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const text = selectedPreset || customText.trim();
+    if (!text || isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      addPrayer(name, text);
+      setSelectedPreset(null);
+      setCustomText("");
+      setName("");
+      setAnonymous(false);
+      handleCandleLight();
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const trackLabel = MUSIC_TRACKS.find((track) => track.id === activeTrack)?.label ?? "Ambient prayer";
+
   return (
-    <div className="min-h-screen relative overflow-x-hidden" style={{ background: "var(--background)" }}>
+    <div
+      className="min-h-screen relative overflow-x-hidden"
+      style={{ background: "var(--background)" }}
+    >
+      <audio ref={audioRef} preload="auto" />
       <ParticleBackground />
-      <NavBar />
 
-      <section id="home" className="min-h-screen flex flex-col items-center justify-center pt-24 pb-12 px-6">
-        <div className="max-w-3xl mx-auto text-center">
-          <motion.div initial={{ opacity: 0, y: -30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+      <NavBar
+        brand={copy.brand}
+        tagline={copy.tagline}
+        navLinks={copy.nav}
+        language={language}
+        setLanguage={handleLanguageChange}
+        isMuted={isMuted}
+        toggleMuted={handleToggleMuted}
+      />
+
+      <section
+        id="section-home"
+        className="min-h-screen flex flex-col items-center justify-center pt-24 pb-12 px-6"
+      >
+        <div className="max-w-4xl mx-auto text-center relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: -24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+          >
             <div className="flex justify-center gap-6 mb-6">
-              <ArchDecoration size={140} className="animate-arch" />
+              <HLElogo size={120} />
             </div>
-            <h1 className="text-6xl font-extrabold tracking-tight mb-3" style={{ fontFamily: "var(--font-display)", letterSpacing: "-0.03em", color: "var(--primary-container)" }}>
-              HLE PRAYER
-            </h1>
-            <p className="text-lg font-medium mb-2" style={{ color: "var(--secondary)", fontFamily: "var(--font-body)" }}>
-              Thắp Nến Nguyện Cầu
+            <p
+              className="text-sm uppercase tracking-[0.4em] mb-4"
+              style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)" }}
+            >
+              {copy.hero.eyebrow}
             </p>
-            <div className="flex justify-center mb-8">
-              <div className="h-0.5 w-24 rounded-full" style={{ background: "var(--primary-container)" }} />
+            <h1
+              className="text-5xl md:text-7xl font-extrabold tracking-tight mb-4"
+              style={{
+                fontFamily: "var(--font-display)",
+                letterSpacing: "-0.04em",
+                color: "var(--primary-container)",
+              }}
+            >
+              {copy.hero.title}
+            </h1>
+            <p
+              className="max-w-2xl mx-auto text-base md:text-lg leading-relaxed"
+              style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}
+            >
+              {copy.hero.description}
+            </p>
+
+            <div className="flex justify-center gap-4 mt-8 flex-wrap">
+              <a
+                href="#section-prayer"
+                className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl text-white font-bold text-base glow-orange"
+                style={{ background: "var(--primary-container)", fontFamily: "var(--font-display)", textDecoration: "none" }}
+              >
+                <Sparkles size={18} />
+                {copy.hero.primaryCta}
+              </a>
+              <a
+                href="#section-roster"
+                className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-bold text-base"
+                style={{
+                  background: "rgba(242, 114, 32, 0.08)",
+                  color: "var(--primary-container)",
+                  border: "1px solid rgba(242, 114, 32, 0.2)",
+                  fontFamily: "var(--font-display)",
+                  textDecoration: "none",
+                }}
+              >
+                {copy.hero.secondaryCta}
+                <ArrowRight size={18} />
+              </a>
             </div>
           </motion.div>
 
-          <motion.div initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: 0.3, duration: 1 }} className="relative my-10">
-            <div className="absolute inset-0 rounded-3xl" style={{ background: "radial-gradient(ellipse at center bottom, rgba(242, 114, 32, 0.2) 0%, transparent 70%)", filter: "blur(30px)" }} />
-            <div className="relative rounded-3xl py-16 px-8" style={{ background: "linear-gradient(180deg, rgba(242, 114, 32, 0.06) 0%, rgba(242, 114, 32, 0.02) 100%)", border: "1px solid rgba(242, 114, 32, 0.15)" }}>
-              <div className="flex justify-center mb-4">
-                <div className="relative">
-                  <FlameIcon size={64} color="#f27220" animated />
-                  <div className="absolute inset-0 rounded-full" style={{ background: "radial-gradient(circle, rgba(242, 114, 32, 0.3) 0%, transparent 70%)", filter: "blur(10px)" }} />
-                </div>
-              </div>
-              <p className="text-3xl font-bold mb-2" style={{ fontFamily: "var(--font-display)", color: "var(--on-background)" }}>
-                {STATS.total.toLocaleString("vi-VN")}
-              </p>
-              <p className="text-sm" style={{ color: "var(--on-surface-variant)" }}>lượt thắp nến nguyện cầu</p>
-            </div>
-          </motion.div>
-
-          <motion.div initial={{ y: 30, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.6, duration: 0.6 }} className="grid grid-cols-2 gap-4 mb-10">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2, duration: 0.8 }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-12"
+          >
             {[
-              { label: "Hôm nay", value: STATS.today },
-              { label: "Tuần này", value: STATS.week },
-            ].map(({ label, value }) => (
-              <div key={label} className="rounded-2xl py-5 px-6 text-left" style={{ background: "var(--surface-container)", border: "1px solid rgba(88, 66, 55, 0.1)" }}>
-                <p className="text-2xl font-bold" style={{ fontFamily: "var(--font-display)", color: "var(--primary-container)" }}>
-                  {value.toLocaleString("vi-VN")}
+              { label: copy.hero.statLabel, value: STATS.total },
+              { label: copy.wishes.title, value: STATS.today },
+              { label: copy.hero.statSuffix, value: STATS.week },
+            ].map((item) => (
+              <div
+                key={item.label}
+                className="rounded-2xl py-5 px-6 text-left"
+                style={{ background: "var(--surface-container)", border: "1px solid rgba(88, 66, 55, 0.1)" }}
+              >
+                <p
+                  className="text-3xl font-bold"
+                  style={{ fontFamily: "var(--font-display)", color: "var(--primary-container)" }}
+                >
+                  {item.value.toLocaleString(language === "ko" ? "ko-KR" : language === "en" ? "en-US" : "vi-VN")}
                 </p>
-                <p className="text-xs mt-1" style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}>{label}</p>
+                <p
+                  className="text-xs mt-1 uppercase tracking-[0.18em]"
+                  style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}
+                >
+                  {item.label}
+                </p>
               </div>
             ))}
-          </motion.div>
-
-          <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.8 }}>
-            <a href="#pray" className="inline-flex items-center gap-3 px-10 py-4 rounded-2xl text-white font-bold text-base glow-orange" style={{ background: "var(--primary-container)", fontFamily: "var(--font-display)" }}>
-              <FlameIcon size={20} color="white" />
-              Thắp Nến Nguyện Cầu
-              <ArrowRight size={18} />
-            </a>
           </motion.div>
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 h-px overflow-hidden">
-          {FLOOR_CANDLES.map((c) => (
-            <motion.div key={c.id} className="absolute bottom-0 rounded-full" style={{ left: `${c.left}%`, width: c.size, height: c.size * 3, background: "var(--primary-container)" }} animate={{ opacity: [0.3, 0.8, 0.3], scaleY: [1, 1.3, 1] }} transition={{ duration: 3, repeat: Infinity, delay: c.delay, ease: "easeInOut" }} />
+          {FLOOR_CANDLES.map((candle) => (
+            <motion.div
+              key={candle.id}
+              className="absolute bottom-0 rounded-full"
+              style={{
+                left: `${candle.left}%`,
+                width: candle.size,
+                height: candle.size * 3,
+                background: "var(--primary-container)",
+              }}
+              animate={{ opacity: [0.3, 0.8, 0.3], scaleY: [1, 1.3, 1] }}
+              transition={{ duration: 3, repeat: Infinity, delay: candle.delay, ease: "easeInOut" }}
+            />
           ))}
         </div>
       </section>
 
-      <section id="pray" className="min-h-screen flex items-center justify-center pt-24 pb-12 px-6">
-        <div className="max-w-5xl w-full mx-auto grid grid-cols-2 gap-12 items-center">
-          <motion.div initial={{ opacity: 0, x: -40 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.7 }} viewport={{ once: true }} className="space-y-8">
+      <section id="section-prayer" className="py-24 px-6 relative z-10">
+        <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
+          <motion.div
+            initial={{ opacity: 0, x: -28 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6 }}
+            viewport={{ once: true }}
+            className="space-y-6"
+          >
             <div>
-              <h1 className="text-5xl font-extrabold mb-3" style={{ fontFamily: "var(--font-display)", letterSpacing: "-0.02em", color: "var(--primary-container)" }}>
-                Thắp Nến<br />Nguyện Cầu
-              </h1>
-              <p className="text-base leading-relaxed mb-6" style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}>
-                Gửi lời nguyện đến đội tuyển <strong style={{ color: "var(--primary-container)" }}>Hanwha Life Esports</strong>.<br />
-                Để niềm tin, tinh thần đồng đội và sự sáng tạo bay lên cùng HLE.
+              <p
+                className="text-xs uppercase tracking-[0.4em] mb-3"
+                style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)" }}
+              >
+                {copy.prayer.title}
               </p>
-              <div className="flex justify-start mb-8">
+              <h2
+                className="text-4xl md:text-5xl font-extrabold mb-4"
+                style={{ fontFamily: "var(--font-display)", letterSpacing: "-0.03em", color: "var(--primary-container)" }}
+              >
+                {copy.prayer.subtitle}
+              </h2>
+              <div className="flex items-center gap-3 flex-wrap">
+                <div
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full"
+                  style={{ background: "rgba(242, 114, 32, 0.12)", color: "var(--primary-container)" }}
+                >
+                  <Music2 size={14} />
+                  {copy.prayer.musicLabel}: {trackLabel} · {isMuted ? copy.prayer.musicOff : copy.prayer.musicOn}
+                </div>
+                <div
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full"
+                  style={{ background: "rgba(242, 114, 32, 0.08)", color: "var(--secondary)" }}
+                >
+                  <Flame size={14} />
+                  {STATS.total.toLocaleString(language === "ko" ? "ko-KR" : language === "en" ? "en-US" : "vi-VN")} candles
+                </div>
+              </div>
+              <p
+                className="mt-4 text-base leading-relaxed max-w-xl"
+                style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}
+              >
+                {copy.hero.description}
+              </p>
+            </div>
+
+            <div className="rounded-3xl p-8" style={{ background: "var(--surface-container)", border: "1px solid rgba(88, 66, 55, 0.1)" }}>
+              <div className="flex justify-center mb-5">
                 <ArchDecoration size={160} animated />
               </div>
-              <div className="space-y-3">
-                {[
-                  { label: "Tổng lượt thắp nến", value: STATS.total },
-                  { label: "Hôm nay", value: STATS.today },
-                  { label: "Tuần này", value: STATS.week },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex items-center justify-between py-2 px-4 rounded-xl" style={{ background: "var(--surface-container)" }}>
-                    <span className="text-sm" style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}>{label}</span>
-                    <span className="font-bold" style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>{value.toLocaleString("vi-VN")}</span>
-                  </div>
-                ))}
+              <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-2xl p-4" style={{ background: "rgba(242, 114, 32, 0.08)" }}>
+                  <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)" }}>
+                    {copy.prayer.title}
+                  </p>
+                  <p className="text-3xl font-bold mt-2" style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>
+                    {STATS.total.toLocaleString(language === "ko" ? "ko-KR" : language === "en" ? "en-US" : "vi-VN")}
+                  </p>
+                </div>
+                <div className="rounded-2xl p-4" style={{ background: "rgba(242, 114, 32, 0.04)" }}>
+                  <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)" }}>
+                    {copy.hero.statLabel}
+                  </p>
+                  <p className="text-3xl font-bold mt-2" style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>
+                    {STATS.today.toLocaleString(language === "ko" ? "ko-KR" : language === "en" ? "en-US" : "vi-VN")}
+                  </p>
+                </div>
               </div>
-              <div className="mt-6 flex items-center gap-3">
+              <div className="mt-5 flex items-center gap-3">
                 <HLElogo size={36} />
                 <div>
-                  <p className="text-xs font-bold" style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>TRUST · TEAMWORK · INNOVATION</p>
-                  <p className="text-xs" style={{ color: "var(--tertiary)", fontFamily: "var(--font-body)" }}>The Energetic Life</p>
+                  <p className="text-xs font-bold" style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)", letterSpacing: "0.08em" }}>
+                    TRUST · TEAMWORK · INNOVATION
+                  </p>
+                  <p className="text-xs" style={{ color: "var(--tertiary)", fontFamily: "var(--font-body)" }}>
+                    HLE 2026 prayer wall
+                  </p>
                 </div>
               </div>
             </div>
           </motion.div>
 
-          <motion.div initial={{ opacity: 0, x: 40 }} whileInView={{ opacity: 1, x: 0 }} transition={{ duration: 0.7, delay: 0.2 }} viewport={{ once: true }}>
-            <div className="rounded-3xl p-8" style={{ background: "var(--surface-container)", border: "1px solid rgba(88, 66, 55, 0.1)" }}>
-              <h2 className="text-xl font-bold mb-6" style={{ fontFamily: "var(--font-display)", color: "var(--on-background)" }}>Thắp Nến Nguyện Cầu</h2>
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div>
-                  <label className="text-xs font-semibold block mb-2" style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-display)", letterSpacing: "0.05em" }}>TÊN CỦA BẠN (tuỳ chọn)</label>
-                  <input type="text" value={name} onChange={(e) => setName(e.target.value)} placeholder="Anonymous" maxLength={50} className="w-full py-3 px-4 rounded-xl text-sm transition-all duration-300" style={{ background: "var(--surface-container-high)", color: "var(--on-background)", border: "1px solid rgba(88, 66, 55, 0.2)", fontFamily: "var(--font-body)" }} />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold block mb-2" style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-display)", letterSpacing: "0.05em" }}>LỜI NGUYỆN CẦU</label>
-                  <textarea value={content} onChange={(e) => setContent(e.target.value.slice(0, MAX_CHARS))} placeholder="Hãy viết lời nguyện của bạn cho HLE ở đây..." rows={6} className="w-full py-3 px-4 rounded-xl text-sm resize-none transition-all duration-300" style={{ background: "var(--surface-container-high)", color: "var(--on-background)", border: "1px solid rgba(88, 66, 55, 0.2)", fontFamily: "var(--font-body)" }} />
-                  <div className="flex justify-end mt-1">
-                    <span className="text-xs" style={{ color: charCount >= MAX_CHARS * 0.9 ? "var(--primary-container)" : "var(--tertiary)", fontFamily: "var(--font-body)" }}>{charCount} / {MAX_CHARS}</span>
-                  </div>
-                </div>
-                <motion.button type="submit" disabled={!canSubmit || isSubmitting} className="w-full py-4 rounded-2xl text-white font-bold text-base flex items-center justify-center gap-3 transition-all duration-300" style={{ background: canSubmit && !isSubmitting && !isSuccess ? "var(--primary-container)" : "var(--surface-container-high)", fontFamily: "var(--font-display)", cursor: canSubmit && !isSubmitting ? "pointer" : "not-allowed" }} whileHover={canSubmit && !isSubmitting ? { scale: 1.02 } : {}} whileTap={canSubmit && !isSubmitting ? { scale: 0.98 } : {}}>
-                  <AnimatePresence mode="wait">
-                    {isSubmitting ? (
-                      <motion.div key="loading" animate={{ rotate: 360 }} transition={{ duration: 1, repeat: Infinity, ease: "linear" }} className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full" />
-                    ) : isSuccess ? (
-                      <motion.div key="success" initial={{ scale: 0 }} animate={{ scale: 1 }}>
-                        <FlameIcon size={20} color="white" />
-                      </motion.div>
-                    ) : (
-                      <motion.div key="idle" className="flex items-center gap-3">
-                        <FlameIcon size={18} color="white" />
-                        Thắp Nến Nguyện Cầu
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </motion.button>
-              </form>
-              {isSuccess && (
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mt-4 text-center py-3 px-4 rounded-xl" style={{ background: "rgba(242, 114, 32, 0.15)", border: "1px solid rgba(242, 114, 32, 0.3)" }}>
-                <p className="text-sm font-bold" style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>✨ Nến của bạn đã được thắp lên!</p>
-                <p className="text-xs mt-1" style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}>Lời nguyện đang bay đến HLE</p>
-              </motion.div>
-              )}
+          <motion.div
+            initial={{ opacity: 0, x: 28 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.1 }}
+            viewport={{ once: true }}
+            className="rounded-3xl p-8"
+            style={{ background: "var(--surface-container)", border: "1px solid rgba(88, 66, 55, 0.1)" }}
+          >
+            <h3
+              className="text-xl font-bold mb-3"
+              style={{ fontFamily: "var(--font-display)", color: "var(--on-background)" }}
+            >
+              {copy.prayer.title}
+            </h3>
+            <p className="text-sm mb-5" style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}>
+              {copy.prayer.subtitle}
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-5">
+              {presets.map((preset, index) => (
+                <button
+                  key={`${preset}-${index}`}
+                  type="button"
+                  onClick={() => {
+                    setSelectedPreset(preset);
+                    setCustomText(preset);
+                  }}
+                  className="text-left rounded-2xl px-4 py-4 transition-all duration-300"
+                  style={{
+                    background: selectedPreset === preset ? "rgba(242, 114, 32, 0.18)" : "rgba(242, 114, 32, 0.06)",
+                    border: `1px solid ${selectedPreset === preset ? "rgba(242, 114, 32, 0.5)" : "rgba(88, 66, 55, 0.12)"}`,
+                    color: selectedPreset === preset ? "var(--primary-container)" : "var(--on-surface)",
+                    fontFamily: "var(--font-body)",
+                  }}
+                >
+                  {preset}
+                </button>
+              ))}
             </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <textarea
+                value={customText}
+                onChange={(event) => {
+                  setCustomText(event.target.value);
+                  if (event.target.value.trim()) {
+                    setSelectedPreset(null);
+                  }
+                }}
+                placeholder={copy.prayer.placeholder}
+                rows={5}
+                className="w-full rounded-2xl px-4 py-4 text-sm resize-none"
+                style={{
+                  background: "rgba(14,14,14,0.56)",
+                  border: customText ? "1px solid rgba(242, 114, 32, 0.45)" : "1px solid rgba(88, 66, 55, 0.18)",
+                  color: "var(--on-surface)",
+                  fontFamily: "var(--font-body)",
+                }}
+              />
+
+              <div className="flex flex-col sm:flex-row gap-4 sm:items-center">
+                <div className="flex-1">
+                  <label className="block text-xs uppercase tracking-[0.2em] mb-2" style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)" }}>
+                    {copy.prayer.nameLabel}
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(event) => setName(event.target.value)}
+                    placeholder={copy.prayer.namePlaceholder}
+                    className="w-full rounded-2xl px-4 py-3 text-sm"
+                    style={{
+                      background: "rgba(14,14,14,0.56)",
+                      border: "1px solid rgba(88, 66, 55, 0.18)",
+                      color: "var(--on-surface)",
+                      fontFamily: "var(--font-body)",
+                    }}
+                  />
+                </div>
+
+                <label className="flex items-center gap-3 sm:self-end rounded-2xl px-4 py-3" style={{ border: "1px solid rgba(88, 66, 55, 0.18)" }}>
+                  <input
+                    type="checkbox"
+                    checked={anonymous}
+                    onChange={(event) => setAnonymous(event.target.checked)}
+                    style={{ accentColor: "#f27220", width: 16, height: 16 }}
+                  />
+                  <UserX size={16} />
+                  <span style={{ color: "var(--on-surface)", fontFamily: "var(--font-body)" }}>{copy.prayer.anonymous}</span>
+                </label>
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between pt-2">
+                <button
+                  type="submit"
+                  disabled={(!selectedPreset && !customText.trim()) || isSubmitting}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-bold"
+                  style={{
+                    background: (!selectedPreset && !customText.trim()) || isSubmitting ? "rgba(242, 114, 32, 0.22)" : "var(--primary-container)",
+                    color: "white",
+                    fontFamily: "var(--font-display)",
+                    cursor: (!selectedPreset && !customText.trim()) || isSubmitting ? "not-allowed" : "pointer",
+                    opacity: (!selectedPreset && !customText.trim()) || isSubmitting ? 0.6 : 1,
+                  }}
+                >
+                  <Sparkles size={16} />
+                  {isSubmitting ? `${copy.prayer.submit}...` : copy.prayer.submit}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleToggleMuted}
+                  className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-bold"
+                  style={{
+                    background: "rgba(242, 114, 32, 0.08)",
+                    color: "var(--primary-container)",
+                    border: "1px solid rgba(242, 114, 32, 0.15)",
+                    fontFamily: "var(--font-display)",
+                  }}
+                >
+                  {isMuted ? <Play size={16} /> : <Pause size={16} />}
+                  {copy.prayer.musicLabel}: {isMuted ? copy.prayer.musicOff : copy.prayer.musicOn}
+                </button>
+              </div>
+            </form>
+
+            <AnimatePresence>
+              {submitted ? (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: -10, scale: 0.96 }}
+                  transition={{ duration: 0.25 }}
+                  className="mt-5 rounded-2xl p-4 text-center"
+                  style={{ background: "rgba(242, 114, 32, 0.12)", border: "1px solid rgba(242, 114, 32, 0.25)" }}
+                >
+                  <p style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>
+                    {copy.prayer.success}
+                  </p>
+                </motion.div>
+              ) : null}
+            </AnimatePresence>
           </motion.div>
         </div>
       </section>
 
-      <section id="history" className="min-h-screen pt-24 pb-12 px-6">
+      <section id="section-roster" className="py-24 px-6 relative z-10">
         <div className="max-w-6xl mx-auto">
-          <motion.div initial={{ opacity: 0, y: -20 }} whileInView={{ opacity: 1, y: 0 }} className="mb-8">
-            <h1 className="text-4xl font-extrabold mb-1" style={{ fontFamily: "var(--font-display)", letterSpacing: "-0.02em", color: "var(--primary-container)" }}>Lịch Sử Nguyện Cầu</h1>
-            <p className="text-sm" style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}>Những lời nguyện đã được gửi đến HLE</p>
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-8"
+          >
+            <p className="text-xs uppercase tracking-[0.4em] mb-3" style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)" }}>
+              {copy.roster.eyebrow}
+            </p>
+            <h2 className="text-4xl md:text-5xl font-extrabold mb-3" style={{ fontFamily: "var(--font-display)", letterSpacing: "-0.03em", color: "var(--primary-container)" }}>
+              {copy.roster.title}
+            </h2>
+            <p className="max-w-3xl text-sm md:text-base" style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}>
+              {copy.roster.subtitle}
+            </p>
           </motion.div>
 
-          <div className="grid grid-cols-12 gap-6">
-            <motion.aside initial={{ opacity: 0, x: -30 }} whileInView={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }} viewport={{ once: true }} className="col-span-3 space-y-4">
-              <div className="rounded-2xl p-5" style={{ background: "var(--surface-container)" }}>
-                <h3 className="text-xs font-bold mb-4" style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)", letterSpacing: "0.08em" }}>THỐNG KÊ</h3>
-                {[
-                  { label: "Tổng lượt", value: 12405 },
-                  { label: "Hôm nay", value: 8230 },
-                  { label: "Tuần này", value: 54112 },
-                  { label: "Tháng này", value: 198740 },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex justify-between items-center py-2">
-                    <span className="text-xs" style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}>{label}</span>
-                    <span className="font-bold text-sm" style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>{value.toLocaleString("vi-VN")}</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5">
+            {ROSTER_MEMBERS.map((member, index) => (
+              <motion.article
+                key={member.id}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.08, duration: 0.45 }}
+                whileHover={{ y: -6 }}
+                className="rounded-3xl overflow-hidden"
+                style={{ background: "var(--surface-container)", border: "1px solid rgba(88, 66, 55, 0.12)" }}
+              >
+                <div
+                  className="relative h-72"
+                  style={{
+                    backgroundImage: `linear-gradient(180deg, rgba(6,6,6,0.08) 0%, rgba(6,6,6,0.82) 100%), url(${member.image})`,
+                    backgroundSize: "cover",
+                    backgroundPosition: "center top",
+                  }}
+                >
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/80" />
+                  <div
+                    className="absolute bottom-4 left-4 right-4"
+                    style={{
+                      fontFamily: "var(--font-display)",
+                      fontSize: "2.6rem",
+                      fontWeight: 700,
+                      color: "rgba(248,236,196,0.86)",
+                      textShadow: "0 0 16px rgba(255,236,178,0.35), 0 4px 16px rgba(0,0,0,0.5)",
+                    }}
+                  >
+                    {member.ign}
                   </div>
-                ))}
-              </div>
-              <div className="rounded-2xl p-5" style={{ background: "var(--surface-container)" }}>
-                <h3 className="text-xs font-bold mb-4 flex items-center gap-2" style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)", letterSpacing: "0.08em" }}><Trophy size={12} />TOP SUPPORTERS</h3>
-                {TOP_PRAYERS.map((p, i) => (
-                  <div key={p.name} className="flex items-center gap-3 py-2">
-                    <span className="text-xs font-bold w-5" style={{ color: i === 0 ? "var(--primary-container)" : "var(--tertiary)", fontFamily: "var(--font-display)" }}>#{i + 1}</span>
-                    <span className="text-xs flex-1 truncate" style={{ color: "var(--on-background)", fontFamily: "var(--font-body)" }}>{p.name}</span>
-                    <span className="text-xs font-bold" style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>{p.count}</span>
+                </div>
+
+                <div className="p-5 space-y-3">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)", fontSize: "1.1rem" }}>
+                        {member.ign}
+                      </h3>
+                      <p className="text-xs" style={{ color: "var(--tertiary)", fontFamily: "var(--font-body)" }}>
+                        {member.name}
+                      </p>
+                    </div>
+                    <span
+                      className="px-3 py-1 rounded-full text-xs font-bold"
+                      style={{
+                        background: "rgba(242, 114, 32, 0.12)",
+                        color: "var(--primary-container)",
+                        border: "1px solid rgba(242, 114, 32, 0.2)",
+                        fontFamily: "var(--font-display)",
+                      }}
+                    >
+                      {ROLE_LABELS[language][member.role]}
+                    </span>
                   </div>
-                ))}
+
+                  <p className="text-sm leading-relaxed" style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}>
+                    {member.bio}
+                  </p>
+
+                  <blockquote
+                    className="rounded-2xl p-4 text-sm"
+                    style={{ background: "rgba(242, 114, 32, 0.06)", border: "1px solid rgba(242, 114, 32, 0.1)", color: "var(--on-surface)", fontFamily: "var(--font-body)" }}
+                  >
+                    “{member.quote}”
+                  </blockquote>
+                </div>
+              </motion.article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="section-achievements" className="py-24 px-6 relative z-10">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-8"
+          >
+            <p className="text-xs uppercase tracking-[0.4em] mb-3" style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)" }}>
+              {copy.achievements.eyebrow}
+            </p>
+            <h2 className="text-4xl md:text-5xl font-extrabold mb-3" style={{ fontFamily: "var(--font-display)", letterSpacing: "-0.03em", color: "var(--primary-container)" }}>
+              {copy.achievements.title}
+            </h2>
+            <p className="max-w-3xl text-sm md:text-base" style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}>
+              {copy.achievements.subtitle}
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
+            {ACHIEVEMENT_CARDS.map((card, index) => (
+              <motion.article
+                key={card.id}
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.08, duration: 0.45 }}
+                whileHover={{ y: -6 }}
+                className="rounded-3xl overflow-hidden"
+                style={{
+                  minHeight: 320,
+                  backgroundImage: `linear-gradient(180deg, rgba(8,8,8,0.16) 0%, rgba(8,8,8,0.92) 70%), url(${card.image})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                  border: "1px solid rgba(242, 114, 32, 0.16)",
+                  boxShadow: "0 12px 36px rgba(0,0,0,0.25)",
+                }}
+              >
+                <div className="p-6 flex h-full flex-col justify-end gap-4">
+                  <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold w-fit" style={{ background: "rgba(242, 114, 32, 0.18)", color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>
+                    <Trophy size={14} />
+                    {card.badge}
+                  </div>
+                  <div>
+                    <p className="text-3xl font-bold mb-1" style={{ fontFamily: "var(--font-display)", color: "#f8ecc4" }}>
+                      {card.title}
+                    </p>
+                    <p className="text-xs uppercase tracking-[0.22em]" style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)" }}>
+                      {card.year}
+                    </p>
+                  </div>
+                  <p className="text-sm leading-relaxed" style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}>
+                    {card.description}
+                  </p>
+                </div>
+              </motion.article>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="section-wishes" className="py-24 px-6 relative z-10">
+        <div className="max-w-6xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="mb-8"
+          >
+            <p className="text-xs uppercase tracking-[0.4em] mb-3" style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)" }}>
+              {copy.wishes.title}
+            </p>
+            <h2 className="text-4xl md:text-5xl font-extrabold mb-3" style={{ fontFamily: "var(--font-display)", letterSpacing: "-0.03em", color: "var(--primary-container)" }}>
+              {copy.wishes.subtitle}
+            </h2>
+          </motion.div>
+
+          <div className="grid grid-cols-1 xl:grid-cols-[280px_1fr_280px] gap-6 items-start">
+            <motion.aside
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="rounded-3xl p-5 space-y-4"
+              style={{ background: "var(--surface-container)", border: "1px solid rgba(88, 66, 55, 0.1)" }}
+            >
+              <h3 className="text-xs font-bold uppercase tracking-[0.3em] flex items-center gap-2" style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)" }}>
+                <Trophy size={12} />
+                {copy.wishes.topSupporters}
+              </h3>
+              {TOP_SUPPORTERS.map((supporter, index) => (
+                <div key={supporter.name} className="flex items-center gap-3 py-2">
+                  <span className="text-xs font-bold w-5" style={{ color: index === 0 ? "var(--primary-container)" : "var(--tertiary)", fontFamily: "var(--font-display)" }}>
+                    #{index + 1}
+                  </span>
+                  <span className="text-xs flex-1 truncate" style={{ color: "var(--on-surface)", fontFamily: "var(--font-body)" }}>
+                    {supporter.name}
+                  </span>
+                  <span className="text-xs font-bold" style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>
+                    {supporter.count}
+                  </span>
+                </div>
+              ))}
+              <div className="rounded-2xl p-4 mt-2" style={{ background: "rgba(242, 114, 32, 0.08)" }}>
+                <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)" }}>
+                  {copy.prayer.musicLabel}
+                </p>
+                <p className="text-sm mt-2" style={{ color: "var(--on-surface)", fontFamily: "var(--font-body)" }}>
+                  {MUSIC_TRACKS.map((track) => track.label).join(" · ")}
+                </p>
               </div>
             </motion.aside>
 
-            <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} viewport={{ once: true }} className="col-span-6">
-              <h3 className="text-xs font-bold mb-4" style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)", letterSpacing: "0.08em" }}>TẤT CẢ LỜI NGUYỆN</h3>
-              <div className="space-y-3">
-                {allPrayers.map((prayer, i) => (
-                  <motion.div key={prayer.id} initial={{ opacity: 0, y: 15 }} whileInView={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }} viewport={{ once: true }} className="rounded-2xl p-5 transition-all duration-300" style={{ background: "var(--surface-container)", border: "1px solid rgba(88, 66, 55, 0.08)" }} whileHover={{ borderColor: "rgba(242, 114, 32, 0.25)", boxShadow: "0 0 20px rgba(242, 114, 32, 0.08)" }}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1 }}
+              viewport={{ once: true }}
+              className="space-y-3"
+            >
+              {allPrayers.length === 0 ? (
+                <div className="rounded-3xl p-12 text-center" style={{ background: "var(--surface-container)", color: "var(--tertiary)", fontFamily: "var(--font-body)" }}>
+                  {copy.wishes.empty}
+                </div>
+              ) : (
+                allPrayers.map((prayer: Prayer, index: number) => (
+                  <motion.article
+                    key={prayer.id}
+                    initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: Math.min(index * 0.04, 0.35), duration: 0.35 }}
+                    className="rounded-3xl p-5"
+                    style={{ background: "var(--surface-container)", border: "1px solid rgba(88, 66, 55, 0.08)" }}
+                  >
                     <div className="flex items-start gap-4">
                       <div className="flex-shrink-0 mt-0.5">
                         <FlameIcon size={22} color={prayer.flameColor} animated />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-bold text-sm" style={{ color: "var(--on-background)", fontFamily: "var(--font-display)" }}>{prayer.name}</span>
-                          <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "rgba(242, 114, 32, 0.12)", color: "var(--primary-container)", fontFamily: "var(--font-body)" }}>đang cháy</span>
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
+                          <span className="font-bold text-sm" style={{ color: "var(--on-surface)", fontFamily: "var(--font-display)" }}>
+                            {prayer.name}
+                          </span>
+                          <span className="text-xs px-2 py-0.5 rounded-full" style={{ background: "rgba(242, 114, 32, 0.12)", color: "var(--primary-container)", fontFamily: "var(--font-body)" }}>
+                            {copy.wishes.burning}
+                          </span>
                         </div>
-                        <p className="text-sm leading-relaxed" style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}>{prayer.content}</p>
-                        <p className="text-xs mt-2" style={{ color: "var(--tertiary)", fontFamily: "var(--font-body)" }}>{formatTime(prayer.createdAt)}</p>
+                        <p className="text-sm leading-relaxed" style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}>
+                          {prayer.content}
+                        </p>
+                        <p className="text-xs mt-2" style={{ color: "var(--tertiary)", fontFamily: "var(--font-body)" }}>
+                          {formatTime(prayer.createdAt, language)}
+                        </p>
                       </div>
                     </div>
-                  </motion.div>
-                ))}
-              </div>
+                  </motion.article>
+                ))
+              )}
             </motion.div>
 
-            <motion.aside initial={{ opacity: 0, x: 30 }} whileInView={{ opacity: 1, x: 0 }} transition={{ delay: 0.4 }} viewport={{ once: true }} className="col-span-3 space-y-4">
+            <motion.aside
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="rounded-3xl p-5 space-y-4"
+              style={{ background: "var(--surface-container)", border: "1px solid rgba(88, 66, 55, 0.1)" }}
+            >
               <div className="rounded-2xl p-5 text-center" style={{ background: "linear-gradient(135deg, rgba(242, 114, 32, 0.12) 0%, rgba(242, 114, 32, 0.04) 100%)", border: "1px solid rgba(242, 114, 32, 0.2)" }}>
                 <div className="flex justify-center mb-3">
                   <FlameIcon size={48} color="#f27220" animated />
                 </div>
-                <p className="text-3xl font-extrabold mb-1" style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>12,405</p>
-                <p className="text-xs" style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}>nến đang cháy</p>
+                <p className="text-3xl font-extrabold mb-1" style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>
+                  {STATS.total.toLocaleString(language === "ko" ? "ko-KR" : language === "en" ? "en-US" : "vi-VN")}
+                </p>
+                <p className="text-xs" style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}>
+                  {copy.hero.statSuffix}
+                </p>
               </div>
-              <div className="rounded-2xl p-5" style={{ background: "var(--surface-container)" }}>
-                <h3 className="text-xs font-bold mb-4" style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)", letterSpacing: "0.08em" }}>HLE ROSTER 2025</h3>
-                {[
-                  { role: "TOP", name: "Zeus", real: "Choi Woo-je" },
-                  { role: "JGL", name: "Peanut", real: "Han Wang-ho" },
-                  { role: "MID", name: "Zeka", real: "Kim Geon-woo" },
-                  { role: "ADC", name: "Viper", real: "Park Do-yeon" },
-                  { role: "SUP", name: "Delight", real: "Young-woo" },
-                ].map(({ role, name, real }) => (
-                  <div key={name} className="flex items-center gap-3 py-2">
-                    <span className="text-xs font-bold w-8" style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>{role}</span>
-                    <span className="text-sm font-semibold flex-1" style={{ color: "var(--on-background)", fontFamily: "var(--font-display)" }}>{name}</span>
-                    <span className="text-xs" style={{ color: "var(--tertiary)", fontFamily: "var(--font-body)" }}>{real}</span>
-                  </div>
-                ))}
+              <div className="rounded-2xl p-5" style={{ background: "rgba(242, 114, 32, 0.06)" }}>
+                <h3 className="text-xs font-bold mb-4 uppercase tracking-[0.2em]" style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)" }}>
+                  {copy.prayer.title}
+                </h3>
+                {[copy.prayer.presets[0], copy.prayer.presets[1], copy.prayer.presets[2]]
+                  .filter(Boolean)
+                  .map((quote) => (
+                    <p key={quote} className="text-sm leading-relaxed py-2" style={{ color: "var(--on-surface)", fontFamily: "var(--font-body)" }}>
+                      “{quote}”
+                    </p>
+                  ))}
               </div>
             </motion.aside>
           </div>
         </div>
       </section>
 
-      <footer className="absolute bottom-4 left-0 right-0 text-center text-xs" style={{ color: "var(--tertiary)", fontFamily: "var(--font-body)" }}>
-        © 2025 Hanwha Life Esports — Beyond the Challenge
+      <footer
+        className="py-12 px-6 text-center"
+        style={{ color: "var(--tertiary)", fontFamily: "var(--font-body)" }}
+      >
+        <div className="max-w-6xl mx-auto border-t border-white/5 pt-8">
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <HLElogo size={28} />
+            <span className="font-bold tracking-[0.2em]" style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>
+              {copy.brand}
+            </span>
+          </div>
+          <p className="text-sm mb-2" style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>
+            {copy.footer}
+          </p>
+          <p className="text-xs opacity-70">© 2026 Hanwha Life Esports prayer wall</p>
+        </div>
       </footer>
     </div>
   );
