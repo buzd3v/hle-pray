@@ -323,7 +323,7 @@ export const ROSTER_MEMBERS: RosterMember[] = [
     id: "delight",
     role: "support",
     ign: "Delight",
-    name: "Ryu Min-seok",
+    name: "Yoo Hwan-joong",
     bio: {
       vi: "Mở nhịp giao tranh, bảo kê đồng đội và thực hiện teamfight gọn gàng.",
       en: "Sets the pace for engages, peel, and clean teamfight execution.",
