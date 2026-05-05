@@ -44,8 +44,8 @@ const FLOOR_CANDLES = [
 
 const TOP_SUPPORTERS = [
   { name: "HLE Vietnam", count: 847 },
-  { name: "Peanut Loyalists", count: 623 },
-  { name: "Viper Faithful", count: 511 },
+  { name: "Kanavi Loyalists", count: 623 },
+  { name: "Gumayusi Faithful", count: 511 },
   { name: "Zeka Enjoyers", count: 398 },
   { name: "Beyond the Challenge", count: 276 },
 ];
@@ -654,7 +654,7 @@ export default function HomePage() {
                   </div>
 
                   <p className="text-sm leading-relaxed" style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}>
-                    {member.bio}
+                    {member.bio[language]}
                   </p>
 
                   <blockquote

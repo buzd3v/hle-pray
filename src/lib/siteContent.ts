@@ -10,7 +10,7 @@ export interface RosterMember {
   role: "top" | "jungle" | "mid" | "adc" | "support";
   ign: string;
   name: string;
-  bio: string;
+  bio: Record<Language, string>;
   quote: string;
   image: string;
 }
@@ -103,9 +103,9 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
       presets: [
         "HLE vô địch LCK mùa này",
         "Zeus bùng nổ ở đường trên",
-        "Peanut kiểm soát hoàn toàn nhịp độ trận đấu",
+        "Kanavi kiểm soát hoàn toàn nhịp độ trận đấu",
         "Zeka tạo ra khác biệt ở mid",
-        "Viper gánh team bằng những pha xử lý lạnh lùng",
+        "Gumayusi gánh team bằng những pha xử lý lạnh lùng",
         "Delight mở giao tranh hoàn hảo",
       ],
       placeholder: "Viết lời cầu nguyện của riêng bạn...",
@@ -163,9 +163,9 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
       presets: [
         "HLE wins the LCK this season",
         "Zeus dominates the top lane",
-        "Peanut controls the entire tempo",
+        "Kanavi controls the entire tempo",
         "Zeka creates mid lane gaps",
-        "Viper delivers clutch late-game carries",
+        "Gumayusi delivers clutch late-game carries",
         "Delight starts perfect fights",
       ],
       placeholder: "Write your own prayer...",
@@ -223,9 +223,9 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
       presets: [
         "HLE가 이번 시즌 LCK를 제패하길",
         "Zeus가 탑 라인을 장악하길",
-        "Peanut이 경기 템포를 지배하길",
+        "Kanavi가 경기 템포를 지배하길",
         "Zeka가 미드 차이를 만들길",
-        "Viper가 결정적인 후반 캐리를 하길",
+        "Gumayusi가 결정적인 후반 캐리를 하길",
         "Delight가 완벽한 이니시를 열길",
       ],
       placeholder: "나만의 기도문을 작성하세요...",
@@ -272,43 +272,63 @@ export const ROSTER_MEMBERS: RosterMember[] = [
     role: "top",
     ign: "Zeus",
     name: "Choi Woo-je",
-    bio: "Anchors the top lane with fearless mechanics and strong side-lane pressure.",
+    bio: {
+      vi: "Giữ đường trên bằng kỹ năng táo bạo và áp lực đơn đường ổn định.",
+      en: "Anchors the top lane with fearless mechanics and steady side-lane pressure.",
+      ko: "대담한 피지컬과 안정적인 사이드 압박으로 탑 라인을 지탱합니다.",
+    },
     quote: "Leave me the hard lane and I will create the opening.",
     image: "/hle-zeus.jpg",
   },
   {
-    id: "peanut",
+    id: "kanavi",
     role: "jungle",
-    ign: "Peanut",
-    name: "Han Wang-ho",
-    bio: "Controls the map with veteran tempo, vision discipline, and decisive pathing.",
-    quote: "I play for the map first and the fight second.",
-    image: "/hle-peanut.jpg",
+    ign: "Kanavi",
+    name: "Seo Jin-hyeok",
+    bio: {
+      vi: "Kiểm soát khu rừng với nhịp độ dồn dập, đường di chuyển gọn và pha mở giao tranh dứt khoát.",
+      en: "Controls the jungle with relentless tempo, clean routes, and decisive engages.",
+      ko: "빠른 템포와 정교한 동선, 과감한 교전 개시로 정글을 지배합니다.",
+    },
+    quote: "I set the pace, and the map follows.",
+    image: "/hle-kanavi.jpg",
   },
   {
     id: "zeka",
     role: "mid",
     ign: "Zeka",
     name: "Kim Geon-woo",
-    bio: "Brings explosive mid-lane pressure, clutch picks, and fearless teamfight reads.",
+    bio: {
+      vi: "Tạo áp lực đường giữa bùng nổ, những lựa chọn quyết định và đọc giao tranh đầy tự tin.",
+      en: "Brings explosive mid-lane pressure, clutch picks, and fearless teamfight reads.",
+      ko: "폭발적인 미드 압박과 결정적인 픽, 자신감 있는 한타 판단을 보여줍니다.",
+    },
     quote: "The mid lane is where momentum turns into victory.",
     image: "/hle-zeka.jpg",
   },
   {
-    id: "viper",
+    id: "gumayusi",
     role: "adc",
-    ign: "Viper",
-    name: "Park Do-hyeon",
-    bio: "Late-game precision, elite mechanics, and the calmest hands in the team fight.",
-    quote: "When the game slows down, I am ready to finish it.",
-    image: "/hle-viper.jpg",
+    ign: "Gumayusi",
+    name: "Lee Min-hyeong",
+    bio: {
+      vi: "Chuẩn xác ở cuối trận, cơ học đỉnh cao và áp lực gánh đội bền bỉ.",
+      en: "Late-game precision, elite mechanics, and unwavering carry pressure.",
+      ko: "후반 운영의 정밀함과 최고 수준의 피지컬, 흔들림 없는 캐리 압박을 보여줍니다.",
+    },
+    quote: "Give me one window, and I will take the game.",
+    image: "/hle-gumayusi.jpg",
   },
   {
     id: "delight",
     role: "support",
     ign: "Delight",
     name: "Ryu Min-seok",
-    bio: "Sets the pace for engages, peel, and clean teamfight execution.",
+    bio: {
+      vi: "Mở nhịp giao tranh, bảo kê đồng đội và thực hiện teamfight gọn gàng.",
+      en: "Sets the pace for engages, peel, and clean teamfight execution.",
+      ko: "교전 타이밍을 열고 아군을 보호하며 깔끔한 한타를 완성합니다.",
+    },
     quote: "A clean engage is the start of a clean win.",
     image: "/hle-delight.jpg",
   },

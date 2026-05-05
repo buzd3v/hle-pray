@@ -25,7 +25,7 @@ export const SAMPLE_PRAYERS: Prayer[] = [
   {
     id: "2",
     name: "Fan HLE VN",
-    content: "Chúc các anh thi đấu thật tốt trận tới. Peanut combo cực mạnh!",
+    content: "Chúc các anh thi đấu thật tốt trận tới. Kanavi combo cực mạnh!",
     createdAt: new Date(Date.now() - 1000 * 60 * 12),
     flameColor: "#ff8c42",
   },
@@ -45,8 +45,8 @@ export const SAMPLE_PRAYERS: Prayer[] = [
   },
   {
     id: "5",
-    name: "Viper Supporter",
-    content: "Viper ADC huyền thoại! Praying for the championship! 🏆🔥",
+    name: "Gumayusi Supporter",
+    content: "Gumayusi ADC huyền thoại! Praying for the championship! 🏆🔥",
     createdAt: new Date(Date.now() - 1000 * 60 * 90),
     flameColor: "#f27220",
   },
