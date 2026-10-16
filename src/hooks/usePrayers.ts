@@ -1,15 +1,14 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import type { Prayer } from "@/types/prayer";
+import { readLocalStorageValue, useLocalStorageValue, writeLocalStorageValue } from "./useLocalStorageValue";
 
 const STORAGE_KEY = "hle-prayer-prayers";
 
-function loadPrayers(): Prayer[] {
-  if (typeof window === "undefined") return [];
+function parsePrayers(raw: string | null): Prayer[] {
+  if (!raw) return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
     return JSON.parse(raw).map((p: Prayer & { createdAt: string }) => ({
       ...p,
       createdAt: new Date(p.createdAt),
@@ -19,12 +18,9 @@ function loadPrayers(): Prayer[] {
   }
 }
 
-function savePrayers(prayers: Prayer[]) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(prayers));
-}
-
 export function usePrayers() {
-  const [prayers, setPrayers] = useState<Prayer[]>(() => loadPrayers());
+  const raw = useLocalStorageValue(STORAGE_KEY);
+  const prayers = useMemo(() => parsePrayers(raw), [raw]);
 
   const addPrayer = useCallback((name: string, content: string) => {
     const colors = ["#f27220", "#ff8c42", "#ffb691", "#ffd700", "#b8babd"];
@@ -35,11 +31,8 @@ export function usePrayers() {
       createdAt: new Date(),
       flameColor: colors[Math.floor(Math.random() * colors.length)],
     };
-    setPrayers((prev) => {
-      const updated = [newPrayer, ...prev];
-      savePrayers(updated);
-      return updated;
-    });
+    const updated = [newPrayer, ...parsePrayers(readLocalStorageValue(STORAGE_KEY))];
+    writeLocalStorageValue(STORAGE_KEY, JSON.stringify(updated));
     return newPrayer;
   }, []);
 

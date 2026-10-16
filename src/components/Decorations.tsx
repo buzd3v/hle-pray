@@ -71,6 +71,32 @@ export function FlameIcon({ size = 24, color = "#f27220", className = "", animat
   );
 }
 
+interface OrangeIconProps {
+  size?: number;
+  className?: string;
+  animated?: boolean;
+}
+
+export function OrangeIcon({ size = 24, className = "", animated = false }: OrangeIconProps) {
+  return (
+    <motion.svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      className={className}
+      animate={animated ? { rotate: [-6, 6, -6], scale: [1, 1.08, 1] } : {}}
+      transition={{ duration: 2.6, repeat: Infinity, ease: "easeInOut" }}
+    >
+      <circle cx="12" cy="13.5" r="8.5" fill="#f27220" />
+      <ellipse cx="9" cy="10.5" rx="3" ry="2" fill="#ffb691" opacity="0.55" transform="rotate(-30 9 10.5)" />
+      <path d="M12 5.2c0-1.4.6-2.4 1.6-3" stroke="#4b6b2a" strokeWidth="1.4" strokeLinecap="round" />
+      <path d="M12.6 5.4c1.6-1.8 4-1.9 5.6-1.2-.9 1.8-3.4 2.7-5.6 1.2Z" fill="#3a9a3a" />
+    </motion.svg>
+  );
+}
+
 interface HLElogoProps {
   size?: number;
   className?: string;

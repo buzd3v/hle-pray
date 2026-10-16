@@ -35,12 +35,30 @@ interface SiteCopy {
   tagline: string;
   hero: {
     title: string;
+    subtitle: string;
     eyebrow: string;
     description: string;
     primaryCta: string;
     secondaryCta: string;
     statLabel: string;
     statSuffix: string;
+  };
+  grove: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    pickButton: string;
+    picking: string;
+    hint: string;
+    greeting: string;
+    handed: string;
+    wishFirst: string;
+    alreadyHave: string;
+    writeWish: string;
+    thanksTitle: string;
+    thanksBody: string;
+    thanksClose: string;
+    steps: [string, string, string];
   };
   prayer: {
     title: string;
@@ -55,6 +73,7 @@ interface SiteCopy {
     musicLabel: string;
     musicOn: string;
     musicOff: string;
+    wallTag: string;
   };
   roster: {
     title: string;
@@ -85,21 +104,41 @@ export const LANGUAGE_OPTIONS: Array<{ value: Language; label: string; flag: str
 
 export const SITE_COPY: Record<Language, SiteCopy> = {
   vi: {
-    brand: "HLE PRAYER",
-    tagline: "Thắp nến nguyện cầu cho Hanwha Life Esports",
+    brand: "HLE LUCKY ORANGE",
+    tagline: "Cam Trao Tay – May Mắn Đong Đầy",
     hero: {
-      title: "THẮP NẾN NGUYỆN CẦU",
+      title: "CAM TRAO TAY",
+      subtitle: "MAY MẮN ĐONG ĐẦY",
       eyebrow: "Beyond the Challenge",
       description:
-        "Gửi lời nguyện đến Hanwha Life Esports, giữ lửa cho một mùa giải bùng nổ và để từng ngọn nến chở hy vọng bay tới đội tuyển.",
-      primaryCta: "Đi tới khu cầu nguyện",
+        "Cùng Soori hái một quả cam may mắn, gửi lời chúc đến Hanwha Life Esports và để may mắn đong đầy cho cả một mùa giải rực rỡ.",
+      primaryCta: "Đến vườn cam của Soori",
       secondaryCta: "Xem đội hình HLE 2026",
-      statLabel: "lượt thắp nến",
-      statSuffix: "ngọn nến đang cháy",
+      statLabel: "quả cam đã trao",
+      statSuffix: "quả cam may mắn đã được trao",
+    },
+    grove: {
+      eyebrow: "Soori's orange grove",
+      title: "VƯỜN CAM CỦA SOORI",
+      subtitle:
+        "Chạm vào quả cam trên cây hoặc bấm nút Hái cam, Soori sẽ trao cam may mắn cho bạn. Hái cam trước hay gửi lời chúc trước đều được!",
+      pickButton: "Hái cam",
+      picking: "Soori đang hái cam...",
+      hint: "Chạm vào một quả cam trên cây để hái",
+      greeting: "Chào bạn! Hái một quả cam may mắn nhé 🍊",
+      handed: "Cam của bạn đây! Giờ hãy để lại lời chúc cho HLE nhé 💛",
+      wishFirst: "Cảm ơn lời chúc! Để Soori hái cam tặng bạn nhé 🍊",
+      alreadyHave: "Bạn đã có cam rồi, giờ hãy gửi lời chúc cho HLE nào!",
+      writeWish: "Viết lời chúc",
+      thanksTitle: "Soori cảm ơn bạn!",
+      thanksBody:
+        "Quả cam may mắn và lời chúc của bạn đã được trao đến HLE. Chúc bạn thật nhiều may mắn, và hẹn gặp lại ở vườn cam nhé!",
+      thanksClose: "Hái thêm cam",
+      steps: ["Hái cam", "Gửi lời chúc", "Nhận may mắn"],
     },
     prayer: {
-      title: "LỜI CẦU NGUYỆN",
-      subtitle: "Chọn sẵn một câu hoặc tự viết lời nguyện của riêng bạn cho HLE.",
+      title: "LỜI CHÚC CHO HLE",
+      subtitle: "Chọn sẵn một câu hoặc tự viết lời chúc của riêng bạn cho HLE.",
       presets: [
         "HLE vô địch LCK mùa này",
         "Zeus bùng nổ ở đường trên",
@@ -108,15 +147,16 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
         "Gumayusi gánh team bằng những pha xử lý lạnh lùng",
         "Delight mở giao tranh hoàn hảo",
       ],
-      placeholder: "Viết lời cầu nguyện của riêng bạn...",
-      submit: "Thắp nến",
-      success: "Lời nguyện đã được thắp sáng!",
+      placeholder: "Viết lời chúc của riêng bạn...",
+      submit: "Gửi lời chúc",
+      success: "Lời chúc đã được gửi!",
       nameLabel: "Tên",
       namePlaceholder: "Tên của bạn (tùy chọn)",
       anonymous: "Ẩn danh",
       musicLabel: "Âm nhạc",
       musicOn: "Đang bật",
       musicOff: "Đang tắt",
+      wallTag: "HLE 2026 lucky orange wall",
     },
     roster: {
       title: "ĐỘI HÌNH HLE 2026",
@@ -129,37 +169,57 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
       eyebrow: "Trophy room",
     },
     wishes: {
-      title: "BỨC THƯ NGUYỆN",
-      subtitle: "Những lời nguyện vừa được thắp lên cho HLE.",
-      empty: "Chưa có lời nguyện nào, hãy thắp ngọn nến đầu tiên.",
-      topSupporters: "TOP NGƯỜI THẮP NẾN",
-      burning: "đang cháy",
+      title: "BỨC THƯ LỜI CHÚC",
+      subtitle: "Những lời chúc vừa được gửi đến HLE cùng quả cam may mắn.",
+      empty: "Chưa có lời chúc nào, hãy là người đầu tiên hái cam.",
+      topSupporters: "TOP NGƯỜI TRAO CAM",
+      burning: "đã trao cam",
     },
-    footer: "Good Game, HLE Fam 💛",
+    footer: "Good Game, HLE Fam 🍊",
     nav: [
       { label: "Trang chủ", href: "#section-home" },
-      { label: "Cầu nguyện", href: "#section-prayer" },
+      { label: "Vườn cam", href: "#section-prayer" },
       { label: "Đội hình", href: "#section-roster" },
       { label: "Danh hiệu", href: "#section-achievements" },
-      { label: "Bức thư", href: "#section-wishes" },
+      { label: "Lời chúc", href: "#section-wishes" },
     ],
   },
   en: {
-    brand: "HLE PRAYER",
-    tagline: "Light a candle for Hanwha Life Esports",
+    brand: "HLE LUCKY ORANGE",
+    tagline: "Orange in Hand – Luck Overflowing",
     hero: {
-      title: "LIGHT A CANDLE",
+      title: "ORANGE IN HAND",
+      subtitle: "LUCK OVERFLOWING",
       eyebrow: "Beyond the Challenge",
       description:
-        "Send your wishes to Hanwha Life Esports, keep the fire alive for a huge season, and let every candle carry hope to the team.",
-      primaryCta: "Go to prayer area",
+        "Pick a lucky orange with Soori, send your wishes to Hanwha Life Esports, and let good luck overflow for a brilliant season.",
+      primaryCta: "Visit Soori's orange grove",
       secondaryCta: "View HLE 2026 roster",
-      statLabel: "candles lit",
-      statSuffix: "candles burning",
+      statLabel: "oranges shared",
+      statSuffix: "lucky oranges shared",
+    },
+    grove: {
+      eyebrow: "Soori's orange grove",
+      title: "SOORI'S ORANGE GROVE",
+      subtitle:
+        "Tap an orange on the tree or press Pick orange and Soori will hand you a lucky one. Pick first or send your wish first, either order works!",
+      pickButton: "Pick orange",
+      picking: "Soori is picking an orange...",
+      hint: "Tap an orange on the tree to pick it",
+      greeting: "Hi there! Pick a lucky orange 🍊",
+      handed: "Here's your orange! Now leave a wish for HLE 💛",
+      wishFirst: "Thanks for the wish! Let Soori pick an orange for you 🍊",
+      alreadyHave: "You already have an orange, now send HLE a wish!",
+      writeWish: "Write a wish",
+      thanksTitle: "Thank you from Soori!",
+      thanksBody:
+        "Your lucky orange and your wish are on their way to HLE. Wishing you lots of luck, see you again in the grove!",
+      thanksClose: "Pick more oranges",
+      steps: ["Pick an orange", "Send a wish", "Receive luck"],
     },
     prayer: {
-      title: "PRAYER BOARD",
-      subtitle: "Pick a preset quote or write your own message for HLE.",
+      title: "WISHES FOR HLE",
+      subtitle: "Pick a preset quote or write your own wish for HLE.",
       presets: [
         "HLE wins the LCK this season",
         "Zeus dominates the top lane",
@@ -168,15 +228,16 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
         "Gumayusi delivers clutch late-game carries",
         "Delight starts perfect fights",
       ],
-      placeholder: "Write your own prayer...",
-      submit: "Light candle",
-      success: "Your prayer has been lit!",
+      placeholder: "Write your own wish...",
+      submit: "Send wish",
+      success: "Your wish has been sent!",
       nameLabel: "Name",
       namePlaceholder: "Your name (optional)",
       anonymous: "Anonymous",
       musicLabel: "Music",
       musicOn: "Playing",
       musicOff: "Muted",
+      wallTag: "HLE 2026 lucky orange wall",
     },
     roster: {
       title: "HLE 2026 ROSTER",
@@ -189,37 +250,57 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
       eyebrow: "Trophy room",
     },
     wishes: {
-      title: "PRAYER LETTERS",
-      subtitle: "Recent wishes sent to HLE.",
-      empty: "No prayers yet. Light the first candle.",
-      topSupporters: "TOP SUPPORTERS",
-      burning: "burning",
+      title: "WISH LETTERS",
+      subtitle: "Recent wishes sent to HLE with a lucky orange.",
+      empty: "No wishes yet. Be the first to pick an orange.",
+      topSupporters: "TOP ORANGE GIVERS",
+      burning: "gave an orange",
     },
-    footer: "Good Game, HLE Fam 💛",
+    footer: "Good Game, HLE Fam 🍊",
     nav: [
       { label: "Home", href: "#section-home" },
-      { label: "Prayer", href: "#section-prayer" },
+      { label: "Orange grove", href: "#section-prayer" },
       { label: "Roster", href: "#section-roster" },
       { label: "Achievements", href: "#section-achievements" },
-      { label: "Letters", href: "#section-wishes" },
+      { label: "Wishes", href: "#section-wishes" },
     ],
   },
   ko: {
-    brand: "HLE PRAYER",
-    tagline: "한화생명e스포츠를 위한 촛불 기도",
+    brand: "HLE LUCKY ORANGE",
+    tagline: "손에 건네는 오렌지 – 가득 채우는 행운",
     hero: {
-      title: "촛불을 밝히자",
+      title: "손에 건네는 오렌지",
+      subtitle: "가득 채우는 행운",
       eyebrow: "Beyond the Challenge",
       description:
-        "한화생명e스포츠에게 마음을 전하고, 빛나는 시즌을 위해 희망을 촛불에 담아 보내세요.",
-      primaryCta: "기도 구역으로 이동",
+        "수리와 함께 행운의 오렌지를 따고, 한화생명e스포츠에게 응원 메시지를 보내 빛나는 시즌에 행운을 가득 채워 주세요.",
+      primaryCta: "수리의 오렌지 농장으로",
       secondaryCta: "HLE 2026 로스터 보기",
-      statLabel: "개의 촛불",
-      statSuffix: "타오르는 촛불",
+      statLabel: "전달된 오렌지",
+      statSuffix: "개의 행운 오렌지가 전달됨",
+    },
+    grove: {
+      eyebrow: "Soori's orange grove",
+      title: "수리의 오렌지 농장",
+      subtitle:
+        "나무의 오렌지를 누르거나 오렌지 따기 버튼을 누르면 수리가 행운의 오렌지를 건네줘요. 오렌지를 먼저 따도, 응원 메시지를 먼저 보내도 좋아요!",
+      pickButton: "오렌지 따기",
+      picking: "수리가 오렌지를 따고 있어요...",
+      hint: "나무에 달린 오렌지를 눌러 따 보세요",
+      greeting: "안녕하세요! 행운의 오렌지를 따 보세요 🍊",
+      handed: "오렌지 여기 있어요! 이제 HLE에게 응원 메시지를 남겨 주세요 💛",
+      wishFirst: "응원 고마워요! 수리가 오렌지를 따 줄게요 🍊",
+      alreadyHave: "이미 오렌지가 있어요, 이제 HLE에게 응원 메시지를 보내요!",
+      writeWish: "응원 메시지 쓰기",
+      thanksTitle: "수리가 고마워해요!",
+      thanksBody:
+        "행운의 오렌지와 응원 메시지가 HLE에게 전달되었어요. 행운이 가득하길 바라요, 농장에서 또 만나요!",
+      thanksClose: "오렌지 더 따기",
+      steps: ["오렌지 따기", "응원 보내기", "행운 받기"],
     },
     prayer: {
-      title: "기도판",
-      subtitle: "미리 준비된 문구를 고르거나 HLE를 위한 나만의 기도를 작성하세요.",
+      title: "HLE 응원 메시지",
+      subtitle: "미리 준비된 문구를 고르거나 HLE를 위한 나만의 응원 메시지를 작성하세요.",
       presets: [
         "HLE가 이번 시즌 LCK를 제패하길",
         "Zeus가 탑 라인을 장악하길",
@@ -228,15 +309,16 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
         "Gumayusi가 결정적인 후반 캐리를 하길",
         "Delight가 완벽한 이니시를 열길",
       ],
-      placeholder: "나만의 기도문을 작성하세요...",
-      submit: "촛불 켜기",
-      success: "기도가 밝혀졌습니다!",
+      placeholder: "나만의 응원 메시지를 작성하세요...",
+      submit: "응원 보내기",
+      success: "응원 메시지가 전달되었습니다!",
       nameLabel: "이름",
       namePlaceholder: "이름 (선택)",
       anonymous: "익명",
       musicLabel: "음악",
       musicOn: "재생 중",
       musicOff: "음소거",
+      wallTag: "HLE 2026 lucky orange wall",
     },
     roster: {
       title: "HLE 2026 로스터",
@@ -249,19 +331,19 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
       eyebrow: "트로피 룸",
     },
     wishes: {
-      title: "기도 편지",
-      subtitle: "HLE에게 보내진 최근 기도들입니다.",
-      empty: "아직 기도가 없습니다. 첫 촛불을 밝혀보세요.",
-      topSupporters: "상위 기도자",
-      burning: "타오르는 중",
+      title: "응원 편지",
+      subtitle: "행운의 오렌지와 함께 HLE에게 보내진 최근 응원 메시지입니다.",
+      empty: "아직 응원 메시지가 없습니다. 첫 오렌지를 따 보세요.",
+      topSupporters: "오렌지 선물 TOP",
+      burning: "오렌지 전달",
     },
-    footer: "Good Game, HLE Fam 💛",
+    footer: "Good Game, HLE Fam 🍊",
     nav: [
       { label: "홈", href: "#section-home" },
-      { label: "기도", href: "#section-prayer" },
+      { label: "오렌지 농장", href: "#section-prayer" },
       { label: "로스터", href: "#section-roster" },
       { label: "업적", href: "#section-achievements" },
-      { label: "편지", href: "#section-wishes" },
+      { label: "응원", href: "#section-wishes" },
     ],
   },
 };
@@ -372,12 +454,12 @@ export const ACHIEVEMENT_CARDS: AchievementCard[] = [
 export const MUSIC_TRACKS: MusicTrack[] = [
   {
     id: "ambient",
-    label: "Ambient prayer",
+    label: "Orchard ambience",
     src: "/bgm-ambient.mp3",
   },
   {
     id: "celebration",
-    label: "Victory surge",
+    label: "Thank-you tune",
     src: "/bgm-thanks.mp3",
   },
 ];

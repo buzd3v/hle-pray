@@ -1,13 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Flame, Music2, Pause, Play, Sparkles, Trophy, UserX } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { ArrowRight, Music2, Pause, Play, Sparkles, Trophy, UserX } from "lucide-react";
 import { ParticleBackground } from "@/components/ParticleBackground";
 import { NavBar } from "@/components/NavBar";
-import { ArchDecoration, FlameIcon, HLElogo } from "@/components/Decorations";
+import { OrangeIcon, HLElogo } from "@/components/Decorations";
+import { GroveStage, type BubbleKey } from "@/components/grove/GroveStage";
+import type { OrangeGroveHandle } from "@/components/grove/OrangeGrove";
 import { usePrayers } from "@/hooks/usePrayers";
-import { ACHIEVEMENT_CARDS, DEFAULT_LANGUAGE, LANGUAGE_OPTIONS, MUSIC_TRACKS, ROSTER_MEMBERS, SITE_COPY } from "@/lib/siteContent";
+import { useLocalStorageValue, writeLocalStorageValue } from "@/hooks/useLocalStorageValue";
+import { ACHIEVEMENT_CARDS, DEFAULT_LANGUAGE, MUSIC_TRACKS, ROSTER_MEMBERS, SITE_COPY } from "@/lib/siteContent";
 import { STATS, SAMPLE_PRAYERS } from "@/types/prayer";
 import type { Language, Prayer } from "@/types/prayer";
 
@@ -49,8 +52,6 @@ const TOP_SUPPORTERS = [
   { name: "Zeka Enjoyers", count: 398 },
   { name: "Beyond the Challenge", count: 276 },
 ];
-
-const MAX_CHARS = 500;
 
 const ROLE_LABELS: Record<Language, Record<string, string>> = {
   vi: {
@@ -102,46 +103,37 @@ function formatTime(date: Date, language: Language) {
   return `${days} ngày trước`;
 }
 
-function getInitialLanguage(): Language {
-  if (typeof window === "undefined") return DEFAULT_LANGUAGE;
-  const stored = window.localStorage.getItem("hle-pray-language");
+const LANGUAGE_KEY = "hle-pray-language";
+const MUTED_KEY = "hle-pray-muted";
+
+function parseLanguage(stored: string | null): Language {
   if (stored === "vi" || stored === "en" || stored === "ko") return stored;
   return DEFAULT_LANGUAGE;
 }
 
-function getInitialMuted(): boolean {
-  if (typeof window === "undefined") return true;
-  const stored = window.localStorage.getItem("hle-pray-muted");
-  return stored ? stored === "true" : true;
-}
-
 export default function HomePage() {
-  const [language, setLanguage] = useState<Language>(DEFAULT_LANGUAGE);
-  const [isMuted, setIsMuted] = useState(true);
+  const language = parseLanguage(useLocalStorageValue(LANGUAGE_KEY));
+  const storedMuted = useLocalStorageValue(MUTED_KEY);
+  const isMuted = storedMuted ? storedMuted === "true" : true;
   const [activeTrack, setActiveTrack] = useState<"ambient" | "celebration">("ambient");
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [customText, setCustomText] = useState("");
   const [name, setName] = useState("");
   const [anonymous, setAnonymous] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [particleTrigger, setParticleTrigger] = useState(false);
+  const [grove, setGrove] = useState<{
+    taken: boolean;
+    wished: boolean;
+    picking: boolean;
+    thanks: boolean;
+    bubble: BubbleKey | null;
+  }>({ taken: false, wished: false, picking: false, thanks: false, bubble: "greeting" });
   const { prayers, addPrayer } = usePrayers();
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const trackResetTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    setLanguage(getInitialLanguage());
-    setIsMuted(getInitialMuted());
-  }, []);
-
-  useEffect(() => {
-    window.localStorage.setItem("hle-pray-language", language);
-  }, [language]);
-
-  useEffect(() => {
-    window.localStorage.setItem("hle-pray-muted", String(isMuted));
-  }, [isMuted]);
+  const groveRef = useRef<OrangeGroveHandle>(null);
+  const groveSectionRef = useRef<HTMLDivElement>(null);
+  const formRef = useRef<HTMLDivElement>(null);
+  // Mirror of the flow state, readable from callbacks fired by the 3D scene.
+  const flow = useRef({ taken: false, wished: false, picking: false });
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -161,61 +153,82 @@ export default function HomePage() {
     }
   }, [activeTrack, isMuted]);
 
-  useEffect(() => {
-    return () => {
-      if (trackResetTimeoutRef.current) {
-        clearTimeout(trackResetTimeoutRef.current);
-      }
-    };
-  }, []);
-
   const copy = SITE_COPY[language];
   const presets = copy.prayer.presets;
   const allPrayers = [...prayers, ...SAMPLE_PRAYERS].slice(0, 20);
 
   const handleLanguageChange = (nextLanguage: Language) => {
-    setLanguage(nextLanguage);
+    writeLocalStorageValue(LANGUAGE_KEY, nextLanguage);
   };
 
   const handleToggleMuted = () => {
-    setIsMuted((value) => !value);
+    writeLocalStorageValue(MUTED_KEY, String(!isMuted));
   };
 
-  const handleCandleLight = () => {
-    setParticleTrigger(true);
-    setTimeout(() => setParticleTrigger(false), 100);
-    setSubmitted(true);
+  const scrollTo = (target: HTMLElement | null) => {
+    target?.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  // Orange picked and wish sent (in either order): Soori thanks the visitor and dances.
+  const finishFlow = () => {
+    setGrove((state) => ({ ...state, thanks: true, bubble: null }));
     setActiveTrack("celebration");
-
-    if (trackResetTimeoutRef.current) {
-      clearTimeout(trackResetTimeoutRef.current);
-    }
-
-    trackResetTimeoutRef.current = setTimeout(() => {
-      setActiveTrack("ambient");
-      setSubmitted(false);
-    }, 6000);
+    groveRef.current?.celebrate();
   };
 
-  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+  const requestPick = (fruitIndex?: number, bubble: BubbleKey = "picking") => {
+    const f = flow.current;
+    if (f.picking) return;
+    if (f.taken) {
+      setGrove((state) => ({ ...state, bubble: "alreadyHave" }));
+      return;
+    }
+    f.picking = true;
+    setGrove((state) => ({ ...state, picking: true, bubble }));
+    groveRef.current?.pickOrange(fruitIndex);
+  };
+
+  const handlePickDone = () => {
+    const f = flow.current;
+    f.picking = false;
+    f.taken = true;
+    setGrove((state) => ({ ...state, taken: true, picking: false, bubble: "handed" }));
+    if (f.wished) finishFlow();
+  };
+
+  const handleCloseThanks = () => {
+    flow.current = { taken: false, wished: false, picking: false };
+    setGrove({ taken: false, wished: false, picking: false, thanks: false, bubble: "greeting" });
+    setActiveTrack("ambient");
+    groveRef.current?.stopCelebrate();
+  };
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const text = selectedPreset || customText.trim();
-    if (!text || isSubmitting) return;
+    if (!text || grove.thanks) return;
 
-    setIsSubmitting(true);
-    try {
-      addPrayer(name, text);
-      setSelectedPreset(null);
-      setCustomText("");
-      setName("");
-      setAnonymous(false);
-      handleCandleLight();
-    } finally {
-      setIsSubmitting(false);
+    addPrayer(name, text);
+    setSelectedPreset(null);
+    setCustomText("");
+    setName("");
+    setAnonymous(false);
+
+    const f = flow.current;
+    f.wished = true;
+    setGrove((state) => ({ ...state, wished: true }));
+    scrollTo(groveSectionRef.current);
+
+    if (f.taken) {
+      finishFlow();
+    } else if (f.picking) {
+      setGrove((state) => ({ ...state, bubble: "wishFirst" }));
+    } else {
+      requestPick(undefined, "wishFirst");
     }
   };
 
-  const trackLabel = MUSIC_TRACKS.find((track) => track.id === activeTrack)?.label ?? "Ambient prayer";
+  const trackLabel = MUSIC_TRACKS.find((track) => track.id === activeTrack)?.label ?? "Orchard ambience";
 
   return (
     <div
@@ -264,6 +277,12 @@ export default function HomePage() {
             >
               {copy.hero.title}
             </h1>
+            <p
+              className="text-xl md:text-3xl font-bold tracking-[0.25em] mb-6"
+              style={{ color: "var(--primary)", fontFamily: "var(--font-display)" }}
+            >
+              {copy.hero.subtitle}
+            </p>
             <p
               className="max-w-2xl mx-auto text-base md:text-lg leading-relaxed"
               style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}
@@ -349,6 +368,22 @@ export default function HomePage() {
       </section>
 
       <section id="section-prayer" className="py-24 px-6 relative z-10">
+        <div ref={groveSectionRef} className="mb-14">
+          <GroveStage
+            copy={copy.grove}
+            handleRef={groveRef}
+            picking={grove.picking}
+            taken={grove.taken}
+            wished={grove.wished}
+            bubble={grove.bubble}
+            thanksOpen={grove.thanks}
+            onRequestPick={(index) => requestPick(index)}
+            onPickDone={handlePickDone}
+            onWriteWish={() => scrollTo(formRef.current)}
+            onCloseThanks={handleCloseThanks}
+          />
+        </div>
+
         <div className="max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-10 items-start">
           <motion.div
             initial={{ opacity: 0, x: -28 }}
@@ -382,8 +417,8 @@ export default function HomePage() {
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-full"
                   style={{ background: "rgba(242, 114, 32, 0.08)", color: "var(--secondary)" }}
                 >
-                  <Flame size={14} />
-                  {STATS.total.toLocaleString(language === "ko" ? "ko-KR" : language === "en" ? "en-US" : "vi-VN")} candles
+                  <OrangeIcon size={14} />
+                  {STATS.total.toLocaleString(language === "ko" ? "ko-KR" : language === "en" ? "en-US" : "vi-VN")} {copy.hero.statLabel}
                 </div>
               </div>
               <p
@@ -396,7 +431,7 @@ export default function HomePage() {
 
             <div className="rounded-3xl p-8" style={{ background: "var(--surface-container)", border: "1px solid rgba(88, 66, 55, 0.1)" }}>
               <div className="flex justify-center mb-5">
-                <ArchDecoration size={160} animated />
+                <OrangeIcon size={88} animated />
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="rounded-2xl p-4" style={{ background: "rgba(242, 114, 32, 0.08)" }}>
@@ -423,7 +458,7 @@ export default function HomePage() {
                     TRUST · TEAMWORK · INNOVATION
                   </p>
                   <p className="text-xs" style={{ color: "var(--tertiary)", fontFamily: "var(--font-body)" }}>
-                    HLE 2026 prayer wall
+                    {copy.prayer.wallTag}
                   </p>
                 </div>
               </div>
@@ -435,8 +470,14 @@ export default function HomePage() {
             whileInView={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.6, delay: 0.1 }}
             viewport={{ once: true }}
+            ref={formRef}
             className="rounded-3xl p-8"
-            style={{ background: "var(--surface-container)", border: "1px solid rgba(88, 66, 55, 0.1)" }}
+            style={{
+              background: "var(--surface-container)",
+              border: grove.taken && !grove.wished ? "1px solid rgba(242, 114, 32, 0.6)" : "1px solid rgba(88, 66, 55, 0.1)",
+              boxShadow: grove.taken && !grove.wished ? "0 0 36px rgba(242, 114, 32, 0.25)" : "none",
+              transition: "border-color 0.4s, box-shadow 0.4s",
+            }}
           >
             <h3
               className="text-xl font-bold mb-3"
@@ -525,18 +566,18 @@ export default function HomePage() {
               <div className="flex flex-col sm:flex-row gap-3 sm:items-center sm:justify-between pt-2">
                 <button
                   type="submit"
-                  disabled={(!selectedPreset && !customText.trim()) || isSubmitting}
+                  disabled={(!selectedPreset && !customText.trim()) || grove.thanks}
                   className="inline-flex items-center justify-center gap-2 px-6 py-4 rounded-2xl font-bold"
                   style={{
-                    background: (!selectedPreset && !customText.trim()) || isSubmitting ? "rgba(242, 114, 32, 0.22)" : "var(--primary-container)",
+                    background: (!selectedPreset && !customText.trim()) || grove.thanks ? "rgba(242, 114, 32, 0.22)" : "var(--primary-container)",
                     color: "white",
                     fontFamily: "var(--font-display)",
-                    cursor: (!selectedPreset && !customText.trim()) || isSubmitting ? "not-allowed" : "pointer",
-                    opacity: (!selectedPreset && !customText.trim()) || isSubmitting ? 0.6 : 1,
+                    cursor: (!selectedPreset && !customText.trim()) || grove.thanks ? "not-allowed" : "pointer",
+                    opacity: (!selectedPreset && !customText.trim()) || grove.thanks ? 0.6 : 1,
                   }}
                 >
                   <Sparkles size={16} />
-                  {isSubmitting ? `${copy.prayer.submit}...` : copy.prayer.submit}
+                  {copy.prayer.submit}
                 </button>
 
                 <button
@@ -555,23 +596,6 @@ export default function HomePage() {
                 </button>
               </div>
             </form>
-
-            <AnimatePresence>
-              {submitted ? (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.96 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: -10, scale: 0.96 }}
-                  transition={{ duration: 0.25 }}
-                  className="mt-5 rounded-2xl p-4 text-center"
-                  style={{ background: "rgba(242, 114, 32, 0.12)", border: "1px solid rgba(242, 114, 32, 0.25)" }}
-                >
-                  <p style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>
-                    {copy.prayer.success}
-                  </p>
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
           </motion.div>
         </div>
       </section>
@@ -806,7 +830,7 @@ export default function HomePage() {
                   >
                     <div className="flex items-start gap-4">
                       <div className="flex-shrink-0 mt-0.5">
-                        <FlameIcon size={22} color={prayer.flameColor} animated />
+                        <OrangeIcon size={22} animated />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
@@ -820,7 +844,7 @@ export default function HomePage() {
                         <p className="text-sm leading-relaxed" style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}>
                           {prayer.content}
                         </p>
-                        <p className="text-xs mt-2" style={{ color: "var(--tertiary)", fontFamily: "var(--font-body)" }}>
+                        <p suppressHydrationWarning className="text-xs mt-2" style={{ color: "var(--tertiary)", fontFamily: "var(--font-body)" }}>
                           {formatTime(prayer.createdAt, language)}
                         </p>
                       </div>
@@ -839,7 +863,7 @@ export default function HomePage() {
             >
               <div className="rounded-2xl p-5 text-center" style={{ background: "linear-gradient(135deg, rgba(242, 114, 32, 0.12) 0%, rgba(242, 114, 32, 0.04) 100%)", border: "1px solid rgba(242, 114, 32, 0.2)" }}>
                 <div className="flex justify-center mb-3">
-                  <FlameIcon size={48} color="#f27220" animated />
+                  <OrangeIcon size={48} animated />
                 </div>
                 <p className="text-3xl font-extrabold mb-1" style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>
                   {STATS.total.toLocaleString(language === "ko" ? "ko-KR" : language === "en" ? "en-US" : "vi-VN")}
@@ -879,7 +903,7 @@ export default function HomePage() {
           <p className="text-sm mb-2" style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>
             {copy.footer}
           </p>
-          <p className="text-xs opacity-70">© 2026 Hanwha Life Esports prayer wall</p>
+          <p className="text-xs opacity-70">© 2026 Hanwha Life Esports lucky orange wall</p>
         </div>
       </footer>
     </div>

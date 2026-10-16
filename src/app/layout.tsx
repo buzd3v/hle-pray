@@ -15,9 +15,9 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "HLE Prayer — Thắp Nến Nguyện Cầu",
+  title: "HLE Lucky Orange — Cam Trao Tay, May Mắn Đong Đầy",
   description:
-    "Trang nguyện cầu cho Hanwha Life Esports với roster riêng, lời cầu nguyện sẵn, âm nhạc và 3 ngôn ngữ Việt - Anh - Hàn.",
+    "Cùng Soori hái cam may mắn và gửi lời chúc đến Hanwha Life Esports, với roster riêng, âm nhạc và 3 ngôn ngữ Việt - Anh - Hàn.",
 };
 
 export default function RootLayout({
