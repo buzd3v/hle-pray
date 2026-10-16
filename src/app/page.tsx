@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, Music2, Pause, Play, Sparkles, Trophy, UserX } from "lucide-react";
 import { ParticleBackground } from "@/components/ParticleBackground";
+import { VideoBackground } from "@/components/VideoBackground";
 import { NavBar } from "@/components/NavBar";
 import { OrangeIcon, HLElogo } from "@/components/Decorations";
 import { GroveStage, type BubbleKey } from "@/components/grove/GroveStage";
 import type { OrangeGroveHandle } from "@/components/grove/OrangeGrove";
 import { usePrayers } from "@/hooks/usePrayers";
 import { useLocalStorageValue, writeLocalStorageValue } from "@/hooks/useLocalStorageValue";
-import { ACHIEVEMENT_CARDS, DEFAULT_LANGUAGE, MUSIC_TRACKS, ROSTER_MEMBERS, SITE_COPY } from "@/lib/siteContent";
+import { ACHIEVEMENT_CARDS, DEFAULT_LANGUAGE, MUSIC_TRACKS, ROSTER_MEMBERS, ROSTER_MODAL_COPY, SITE_COPY } from "@/lib/siteContent";
+import { RosterModal } from "@/components/RosterModal";
 import { STATS, SAMPLE_PRAYERS } from "@/types/prayer";
 import type { Language, Prayer } from "@/types/prayer";
 
@@ -117,6 +119,7 @@ export default function HomePage() {
   const isMuted = storedMuted ? storedMuted === "true" : true;
   const [activeTrack, setActiveTrack] = useState<"ambient" | "celebration">("ambient");
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
+  const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [customText, setCustomText] = useState("");
   const [name, setName] = useState("");
   const [anonymous, setAnonymous] = useState(false);
@@ -152,6 +155,9 @@ export default function HomePage() {
       });
     }
   }, [activeTrack, isMuted]);
+
+  const closeRosterModal = useCallback(() => setSelectedMemberId(null), []);
+  const selectedMember = ROSTER_MEMBERS.find((member) => member.id === selectedMemberId) ?? null;
 
   const copy = SITE_COPY[language];
   const presets = copy.prayer.presets;
@@ -231,11 +237,9 @@ export default function HomePage() {
   const trackLabel = MUSIC_TRACKS.find((track) => track.id === activeTrack)?.label ?? "Orchard ambience";
 
   return (
-    <div
-      className="min-h-screen relative overflow-x-hidden"
-      style={{ background: "var(--background)" }}
-    >
+    <div className="min-h-screen relative overflow-x-hidden">
       <audio ref={audioRef} preload="auto" />
+      <VideoBackground />
       <ParticleBackground />
 
       <NavBar
@@ -619,7 +623,7 @@ export default function HomePage() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-5 gap-5">
+          <div className="grid grid-cols-1 xl:grid-cols-5 gap-4 xl:gap-5">
             {ROSTER_MEMBERS.map((member, index) => (
               <motion.article
                 key={member.id}
@@ -627,24 +631,51 @@ export default function HomePage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.08, duration: 0.45 }}
-                whileHover={{ y: -6 }}
-                className="rounded-3xl overflow-hidden"
-                style={{ background: "var(--surface-container)", border: "1px solid rgba(88, 66, 55, 0.12)" }}
+                whileHover={{
+                  borderColor: "rgba(242, 114, 32, 0.55)",
+                  boxShadow: "0 0 28px rgba(242, 114, 32, 0.25)",
+                }}
+                className="rounded-3xl overflow-hidden flex flex-col cursor-pointer"
+                style={{ background: "var(--surface-container)", border: "1px solid rgba(88, 66, 55, 0.12)", containerType: "inline-size" }}
+                role="button"
+                tabIndex={0}
+                aria-label={`${member.ign} — ${ROSTER_MODAL_COPY[language].viewDetail}`}
+                onClick={() => setSelectedMemberId(member.id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    setSelectedMemberId(member.id);
+                  }
+                }}
               >
                 <div
-                  className="relative h-72"
+                  className="relative h-72 shrink-0"
                   style={{
-                    backgroundImage: `linear-gradient(180deg, rgba(6,6,6,0.08) 0%, rgba(6,6,6,0.82) 100%), url(${member.image})`,
+                    backgroundImage: `linear-gradient(180deg, rgba(6,6,6,0) 0%, rgba(6,6,6,0.55) 100%), url(${member.image})`,
                     backgroundSize: "cover",
-                    backgroundPosition: "center top",
+                    backgroundPosition: member.imagePosition,
                   }}
                 >
-                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/80" />
+                  <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/70" />
+                  <span
+                    className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold"
+                    style={{
+                      background: "rgba(14,14,14,0.7)",
+                      color: "var(--primary-container)",
+                      border: "1px solid rgba(242, 114, 32, 0.35)",
+                      fontFamily: "var(--font-display)",
+                    }}
+                  >
+                    <Trophy size={12} />
+                    {ROSTER_MODAL_COPY[language].viewDetail}
+                  </span>
                   <div
-                    className="absolute bottom-4 left-4 right-4"
+                    className="absolute bottom-4 left-4 right-4 text-center"
                     style={{
                       fontFamily: "var(--font-display)",
-                      fontSize: "2.6rem",
+                      fontSize: "clamp(1.1rem, 14cqw, 2.1rem)",
+                      lineHeight: 1.1,
+                      letterSpacing: "-0.02em",
                       fontWeight: 700,
                       color: "rgba(248,236,196,0.86)",
                       textShadow: "0 0 16px rgba(255,236,178,0.35), 0 4px 16px rgba(0,0,0,0.5)",
@@ -888,6 +919,13 @@ export default function HomePage() {
           </div>
         </div>
       </section>
+
+      <RosterModal
+        member={selectedMember}
+        language={language}
+        roleLabel={selectedMember ? ROLE_LABELS[language][selectedMember.role] : ""}
+        onClose={closeRosterModal}
+      />
 
       <footer
         className="py-12 px-6 text-center"

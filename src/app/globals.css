@@ -50,6 +50,11 @@
 }
 
 @theme inline {
+  /* One responsive breakpoint: >= 850px is the desktop layout, below is mobile. */
+  --breakpoint-sm: 850px;
+  --breakpoint-md: 850px;
+  --breakpoint-lg: 850px;
+  --breakpoint-xl: 850px;
   --color-primary: var(--primary);
   --color-primary-container: var(--primary-container);
   --color-on-primary: var(--on-primary);

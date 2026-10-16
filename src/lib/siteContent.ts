@@ -5,6 +5,18 @@ export interface NavLink {
   href: string;
 }
 
+export interface RosterTitle {
+  year: string;
+  event: string;
+  team: string;
+  result: "champion" | "gold";
+}
+
+export interface RosterAward {
+  year: string;
+  name: string;
+}
+
 export interface RosterMember {
   id: string;
   role: "top" | "jungle" | "mid" | "adc" | "support";
@@ -13,7 +25,45 @@ export interface RosterMember {
   bio: Record<Language, string>;
   quote: string;
   image: string;
+  /** CSS background-position that keeps the player centred in the portrait card crop. */
+  imagePosition: string;
+  detailImage: string;
+  titles: RosterTitle[];
+  awards: RosterAward[];
 }
+
+export const ROSTER_MODAL_COPY: Record<
+  Language,
+  { titles: string; awards: string; close: string; champion: string; gold: string; viewDetail: string; source: string }
+> = {
+  vi: {
+    titles: "Danh hiệu đồng đội",
+    awards: "Giải thưởng cá nhân",
+    close: "Đóng",
+    champion: "Vô địch",
+    gold: "Huy chương vàng",
+    viewDetail: "Xem thành tích",
+    source: "Nguồn: Liquipedia, Leaguepedia, Wikipedia",
+  },
+  en: {
+    titles: "Team titles",
+    awards: "Individual awards",
+    close: "Close",
+    champion: "Champion",
+    gold: "Gold medal",
+    viewDetail: "View achievements",
+    source: "Sources: Liquipedia, Leaguepedia, Wikipedia",
+  },
+  ko: {
+    titles: "팀 우승 기록",
+    awards: "개인 수상",
+    close: "닫기",
+    champion: "우승",
+    gold: "금메달",
+    viewDetail: "업적 보기",
+    source: "출처: Liquipedia, Leaguepedia, Wikipedia",
+  },
+};
 
 export interface AchievementCard {
   id: string;
@@ -121,7 +171,7 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
       eyebrow: "Soori's orange grove",
       title: "VƯỜN CAM CỦA SOORI",
       subtitle:
-        "Chạm vào quả cam trên cây hoặc bấm nút Hái cam, Soori sẽ trao cam may mắn cho bạn. Hái cam trước hay gửi lời chúc trước đều được!",
+        "Chạm vào quả cam trên cây hoặc bấm nút Hái cam, Soori sẽ trao cam may mắn cho bạn.",
       pickButton: "Hái cam",
       picking: "Soori đang hái cam...",
       hint: "Chạm vào một quả cam trên cây để hái",
@@ -202,7 +252,7 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
       eyebrow: "Soori's orange grove",
       title: "SOORI'S ORANGE GROVE",
       subtitle:
-        "Tap an orange on the tree or press Pick orange and Soori will hand you a lucky one. Pick first or send your wish first, either order works!",
+        "Tap an orange on the tree or press Pick orange and Soori will hand you a lucky one.",
       pickButton: "Pick orange",
       picking: "Soori is picking an orange...",
       hint: "Tap an orange on the tree to pick it",
@@ -283,7 +333,7 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
       eyebrow: "Soori's orange grove",
       title: "수리의 오렌지 농장",
       subtitle:
-        "나무의 오렌지를 누르거나 오렌지 따기 버튼을 누르면 수리가 행운의 오렌지를 건네줘요. 오렌지를 먼저 따도, 응원 메시지를 먼저 보내도 좋아요!",
+        "나무의 오렌지를 누르거나 오렌지 따기 버튼을 누르면 수리가 행운의 오렌지를 건네줘요.",
       pickButton: "오렌지 따기",
       picking: "수리가 오렌지를 따고 있어요...",
       hint: "나무에 달린 오렌지를 눌러 따 보세요",
@@ -360,7 +410,28 @@ export const ROSTER_MEMBERS: RosterMember[] = [
       ko: "대담한 피지컬과 안정적인 사이드 압박으로 탑 라인을 지탱합니다.",
     },
     quote: "Leave me the hard lane and I will create the opening.",
-    image: "/hle-zeus.jpg",
+    image: "/roster/zeus.jpg",
+    imagePosition: "50% 50%",
+    detailImage: "/zeus_detail.jpg",
+    titles: [
+      { year: "2026", event: "Mid-Season Invitational", team: "HLE", result: "champion" },
+      { year: "2025", event: "LCK Cup", team: "HLE", result: "champion" },
+      { year: "2025", event: "First Stand", team: "HLE", result: "champion" },
+      { year: "2024", event: "World Championship", team: "T1", result: "champion" },
+      { year: "2024", event: "Esports World Cup", team: "T1", result: "champion" },
+      { year: "2023", event: "World Championship", team: "T1", result: "champion" },
+      { year: "2022", event: "LCK Spring", team: "T1", result: "champion" },
+      { year: "2026", event: "Asian Games", team: "KOR", result: "gold" },
+      { year: "2022", event: "Asian Games", team: "KOR", result: "gold" },
+    ],
+    awards: [
+      { year: "2026", name: "MSI Finals MVP" },
+      { year: "2025", name: "LCK Cup Finals MVP" },
+      { year: "2023", name: "Worlds Finals MVP" },
+      { year: "2022–2024", name: "LCK Top Laner of the Year" },
+      { year: "2026", name: "All-LCK First Team" },
+      { year: "2022–2023", name: "All-LCK First Team (Spring 2022, Summer 2022, Spring 2023)" },
+    ],
   },
   {
     id: "kanavi",
@@ -373,7 +444,25 @@ export const ROSTER_MEMBERS: RosterMember[] = [
       ko: "빠른 템포와 정교한 동선, 과감한 교전 개시로 정글을 지배합니다.",
     },
     quote: "I set the pace, and the map follows.",
-    image: "/hle-kanavi.jpg",
+    image: "/roster/kanavi.jpg",
+    imagePosition: "70% 50%",
+    detailImage: "/kanavi_detail.jpg",
+    titles: [
+      { year: "2026", event: "Mid-Season Invitational", team: "HLE", result: "champion" },
+      { year: "2023", event: "Mid-Season Invitational", team: "JDG", result: "champion" },
+      { year: "2023", event: "LPL Summer", team: "JDG", result: "champion" },
+      { year: "2023", event: "LPL Spring", team: "JDG", result: "champion" },
+      { year: "2022", event: "LPL Summer", team: "JDG", result: "champion" },
+      { year: "2020", event: "LPL Spring", team: "JDG", result: "champion" },
+      { year: "2022", event: "Asian Games", team: "KOR", result: "gold" },
+    ],
+    awards: [
+      { year: "2026", name: "All-LCK First Team" },
+      { year: "2023", name: "LPL Jungler of the Year" },
+      { year: "2022", name: "LPL Jungler of the Year" },
+      { year: "2022", name: "LPL Import Player of the Year" },
+      { year: "2020", name: "LPL Spring Split MVP" },
+    ],
   },
   {
     id: "zeka",
@@ -386,7 +475,22 @@ export const ROSTER_MEMBERS: RosterMember[] = [
       ko: "폭발적인 미드 압박과 결정적인 픽, 자신감 있는 한타 판단을 보여줍니다.",
     },
     quote: "The mid lane is where momentum turns into victory.",
-    image: "/hle-zeka.jpg",
+    image: "/roster/zeka.jpg",
+    imagePosition: "40% 50%",
+    detailImage: "/zeka_detail.jpg",
+    titles: [
+      { year: "2026", event: "Mid-Season Invitational", team: "HLE", result: "champion" },
+      { year: "2025", event: "LCK Cup", team: "HLE", result: "champion" },
+      { year: "2025", event: "First Stand", team: "HLE", result: "champion" },
+      { year: "2024", event: "LCK Summer", team: "HLE", result: "champion" },
+      { year: "2022", event: "World Championship", team: "DRX", result: "champion" },
+    ],
+    awards: [
+      { year: "2022", name: "LCK Player of the Year" },
+      { year: "2026", name: "All-LCK Second Team" },
+      { year: "2024", name: "All-LCK Second Team (Summer)" },
+      { year: "2023–2024", name: "All-LCK Third Team (Summer 2023, Spring 2024)" },
+    ],
   },
   {
     id: "gumayusi",
@@ -399,7 +503,24 @@ export const ROSTER_MEMBERS: RosterMember[] = [
       ko: "후반 운영의 정밀함과 최고 수준의 피지컬, 흔들림 없는 캐리 압박을 보여줍니다.",
     },
     quote: "Give me one window, and I will take the game.",
-    image: "/hle-gumayusi.jpg",
+    image: "/roster/gumayusi.jpg",
+    imagePosition: "60% 50%",
+    detailImage: "/guma_detail.jpg",
+    titles: [
+      { year: "2026", event: "Mid-Season Invitational", team: "HLE", result: "champion" },
+      { year: "2025", event: "World Championship", team: "T1", result: "champion" },
+      { year: "2024", event: "World Championship", team: "T1", result: "champion" },
+      { year: "2024", event: "Esports World Cup", team: "T1", result: "champion" },
+      { year: "2023", event: "World Championship", team: "T1", result: "champion" },
+      { year: "2022", event: "LCK Spring", team: "T1", result: "champion" },
+      { year: "2026", event: "Asian Games", team: "KOR", result: "gold" },
+    ],
+    awards: [
+      { year: "2025", name: "Worlds Finals MVP" },
+      { year: "2023–2025", name: "LCK Bot Laner of the Year" },
+      { year: "2022–2023", name: "All-LCK First Team (Spring 2022, Spring 2023)" },
+      { year: "2024–2026", name: "All-LCK Third Team (Spring 2024, 2025, 2026)" },
+    ],
   },
   {
     id: "delight",
@@ -412,7 +533,22 @@ export const ROSTER_MEMBERS: RosterMember[] = [
       ko: "교전 타이밍을 열고 아군을 보호하며 깔끔한 한타를 완성합니다.",
     },
     quote: "A clean engage is the start of a clean win.",
-    image: "/hle-delight.jpg",
+    image: "/roster/delight.jpg",
+    imagePosition: "50% 50%",
+    detailImage: "/delight_detail.jpg",
+    titles: [
+      { year: "2026", event: "Mid-Season Invitational", team: "HLE", result: "champion" },
+      { year: "2025", event: "First Stand", team: "HLE", result: "champion" },
+      { year: "2025", event: "LCK Cup", team: "HLE", result: "champion" },
+      { year: "2024", event: "LCK Summer", team: "HLE", result: "champion" },
+      { year: "2023", event: "LCK Summer", team: "Gen.G", result: "champion" },
+      { year: "2023", event: "LCK Spring", team: "Gen.G", result: "champion" },
+    ],
+    awards: [
+      { year: "2023", name: "LCK Assist King" },
+      { year: "2023–2026", name: "All-LCK Second Team (Summer 2023, Summer 2024, 2026)" },
+      { year: "2024–2025", name: "All-LCK Third Team (Spring 2024, 2025)" },
+    ],
   },
 ];
 
