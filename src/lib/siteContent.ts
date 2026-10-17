@@ -90,8 +90,6 @@ interface SiteCopy {
     description: string;
     primaryCta: string;
     secondaryCta: string;
-    statLabel: string;
-    statSuffix: string;
   };
   grove: {
     eyebrow: string;
@@ -139,7 +137,6 @@ interface SiteCopy {
     title: string;
     subtitle: string;
     empty: string;
-    topSupporters: string;
     burning: string;
   };
   footer: string;
@@ -164,8 +161,6 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
         "Cùng Soori hái một quả cam may mắn, gửi lời chúc đến Hanwha Life Esports và để may mắn đong đầy cho cả một mùa giải rực rỡ.",
       primaryCta: "Đến vườn cam của Soori",
       secondaryCta: "Xem đội hình HLE 2026",
-      statLabel: "quả cam đã trao",
-      statSuffix: "quả cam may mắn đã được trao",
     },
     grove: {
       eyebrow: "Soori's orange grove",
@@ -190,7 +185,7 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
       title: "LỜI CHÚC CHO HLE",
       subtitle: "Chọn sẵn một câu hoặc tự viết lời chúc của riêng bạn cho HLE.",
       presets: [
-        "HLE vô địch LCK mùa này",
+        "HLE vô địch Worlds mùa này",
         "Zeus bùng nổ ở đường trên",
         "Kanavi kiểm soát hoàn toàn nhịp độ trận đấu",
         "Zeka tạo ra khác biệt ở mid",
@@ -222,7 +217,6 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
       title: "BỨC THƯ LỜI CHÚC",
       subtitle: "Những lời chúc vừa được gửi đến HLE cùng quả cam may mắn.",
       empty: "Chưa có lời chúc nào, hãy là người đầu tiên hái cam.",
-      topSupporters: "TOP NGƯỜI TRAO CAM",
       burning: "đã trao cam",
     },
     footer: "Good Game, HLE Fam 🍊",
@@ -245,8 +239,6 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
         "Pick a lucky orange with Soori, send your wishes to Hanwha Life Esports, and let good luck overflow for a brilliant season.",
       primaryCta: "Visit Soori's orange grove",
       secondaryCta: "View HLE 2026 roster",
-      statLabel: "oranges shared",
-      statSuffix: "lucky oranges shared",
     },
     grove: {
       eyebrow: "Soori's orange grove",
@@ -271,7 +263,7 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
       title: "WISHES FOR HLE",
       subtitle: "Pick a preset quote or write your own wish for HLE.",
       presets: [
-        "HLE wins the LCK this season",
+        "HLE wins Worlds this season",
         "Zeus dominates the top lane",
         "Kanavi controls the entire tempo",
         "Zeka creates mid lane gaps",
@@ -303,7 +295,6 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
       title: "WISH LETTERS",
       subtitle: "Recent wishes sent to HLE with a lucky orange.",
       empty: "No wishes yet. Be the first to pick an orange.",
-      topSupporters: "TOP ORANGE GIVERS",
       burning: "gave an orange",
     },
     footer: "Good Game, HLE Fam 🍊",
@@ -326,8 +317,6 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
         "수리와 함께 행운의 오렌지를 따고, 한화생명e스포츠에게 응원 메시지를 보내 빛나는 시즌에 행운을 가득 채워 주세요.",
       primaryCta: "수리의 오렌지 농장으로",
       secondaryCta: "HLE 2026 로스터 보기",
-      statLabel: "전달된 오렌지",
-      statSuffix: "개의 행운 오렌지가 전달됨",
     },
     grove: {
       eyebrow: "Soori's orange grove",
@@ -352,7 +341,7 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
       title: "HLE 응원 메시지",
       subtitle: "미리 준비된 문구를 고르거나 HLE를 위한 나만의 응원 메시지를 작성하세요.",
       presets: [
-        "HLE가 이번 시즌 LCK를 제패하길",
+        "HLE가 이번 시즌 월드 챔피언십을 제패하길",
         "Zeus가 탑 라인을 장악하길",
         "Kanavi가 경기 템포를 지배하길",
         "Zeka가 미드 차이를 만들길",
@@ -384,7 +373,6 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
       title: "응원 편지",
       subtitle: "행운의 오렌지와 함께 HLE에게 보내진 최근 응원 메시지입니다.",
       empty: "아직 응원 메시지가 없습니다. 첫 오렌지를 따 보세요.",
-      topSupporters: "오렌지 선물 TOP",
       burning: "오렌지 전달",
     },
     footer: "Good Game, HLE Fam 🍊",

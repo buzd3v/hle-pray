@@ -13,7 +13,6 @@ import { usePrayers } from "@/hooks/usePrayers";
 import { useLocalStorageValue, writeLocalStorageValue } from "@/hooks/useLocalStorageValue";
 import { ACHIEVEMENT_CARDS, DEFAULT_LANGUAGE, MUSIC_TRACKS, ROSTER_MEMBERS, ROSTER_MODAL_COPY, SITE_COPY } from "@/lib/siteContent";
 import { RosterModal } from "@/components/RosterModal";
-import { STATS } from "@/types/prayer";
 import type { Language, Prayer } from "@/types/prayer";
 
 const FLOOR_CANDLES = [
@@ -45,14 +44,6 @@ const FLOOR_CANDLES = [
   { id: 25, left: 76.2, delay: 1.7, size: 1.0 },
   { id: 26, left: 82.4, delay: 2.2, size: 1.0 },
   { id: 27, left: 88.6, delay: 0.9, size: 0.5 },
-];
-
-const TOP_SUPPORTERS = [
-  { name: "HLE Vietnam", count: 847 },
-  { name: "Kanavi Loyalists", count: 623 },
-  { name: "Gumayusi Faithful", count: 511 },
-  { name: "Zeka Enjoyers", count: 398 },
-  { name: "Beyond the Challenge", count: 276 },
 ];
 
 const ROLE_LABELS: Record<Language, Record<string, string>> = {
@@ -320,37 +311,6 @@ export default function HomePage() {
             </div>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2, duration: 0.8 }}
-            className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-12"
-          >
-            {[
-              { label: copy.hero.statLabel, value: STATS.total },
-              { label: copy.wishes.title, value: STATS.today },
-              { label: copy.hero.statSuffix, value: STATS.week },
-            ].map((item) => (
-              <div
-                key={item.label}
-                className="rounded-2xl py-5 px-6 text-left"
-                style={{ background: "var(--surface-container)", border: "1px solid rgba(88, 66, 55, 0.1)" }}
-              >
-                <p
-                  className="text-3xl font-bold"
-                  style={{ fontFamily: "var(--font-display)", color: "var(--primary-container)" }}
-                >
-                  {item.value.toLocaleString(language === "ko" ? "ko-KR" : language === "en" ? "en-US" : "vi-VN")}
-                </p>
-                <p
-                  className="text-xs mt-1 uppercase tracking-[0.18em]"
-                  style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}
-                >
-                  {item.label}
-                </p>
-              </div>
-            ))}
-          </motion.div>
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 h-px overflow-hidden">
@@ -417,13 +377,6 @@ export default function HomePage() {
                   <Music2 size="0.875rem" />
                   {copy.prayer.musicLabel}: {trackLabel} · {isMuted ? copy.prayer.musicOff : copy.prayer.musicOn}
                 </div>
-                <div
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full"
-                  style={{ background: "rgba(242, 114, 32, 0.08)", color: "var(--secondary)" }}
-                >
-                  <OrangeIcon size={14} />
-                  {STATS.total.toLocaleString(language === "ko" ? "ko-KR" : language === "en" ? "en-US" : "vi-VN")} {copy.hero.statLabel}
-                </div>
               </div>
               <p
                 className="mt-4 text-base leading-relaxed max-w-xl"
@@ -436,24 +389,6 @@ export default function HomePage() {
             <div className="rounded-3xl p-8" style={{ background: "var(--surface-container)", border: "1px solid rgba(88, 66, 55, 0.1)" }}>
               <div className="flex justify-center mb-5">
                 <OrangeIcon size={88} animated />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="rounded-2xl p-4" style={{ background: "rgba(242, 114, 32, 0.08)" }}>
-                  <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)" }}>
-                    {copy.prayer.title}
-                  </p>
-                  <p className="text-3xl font-bold mt-2" style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>
-                    {STATS.total.toLocaleString(language === "ko" ? "ko-KR" : language === "en" ? "en-US" : "vi-VN")}
-                  </p>
-                </div>
-                <div className="rounded-2xl p-4" style={{ background: "rgba(242, 114, 32, 0.04)" }}>
-                  <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)" }}>
-                    {copy.hero.statLabel}
-                  </p>
-                  <p className="text-3xl font-bold mt-2" style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>
-                    {STATS.today.toLocaleString(language === "ko" ? "ko-KR" : language === "en" ? "en-US" : "vi-VN")}
-                  </p>
-                </div>
               </div>
               <div className="mt-5 flex items-center gap-3">
                 <HLElogo size={36} />
@@ -809,24 +744,7 @@ export default function HomePage() {
               className="rounded-3xl p-5 space-y-4"
               style={{ background: "var(--surface-container)", border: "1px solid rgba(88, 66, 55, 0.1)" }}
             >
-              <h3 className="text-xs font-bold uppercase tracking-[0.3em] flex items-center gap-2" style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)" }}>
-                <Trophy size="0.75rem" />
-                {copy.wishes.topSupporters}
-              </h3>
-              {TOP_SUPPORTERS.map((supporter, index) => (
-                <div key={supporter.name} className="flex items-center gap-3 py-2">
-                  <span className="text-xs font-bold w-5" style={{ color: index === 0 ? "var(--primary-container)" : "var(--tertiary)", fontFamily: "var(--font-display)" }}>
-                    #{index + 1}
-                  </span>
-                  <span className="text-xs flex-1 truncate" style={{ color: "var(--on-surface)", fontFamily: "var(--font-body)" }}>
-                    {supporter.name}
-                  </span>
-                  <span className="text-xs font-bold" style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>
-                    {supporter.count}
-                  </span>
-                </div>
-              ))}
-              <div className="rounded-2xl p-4 mt-2" style={{ background: "rgba(242, 114, 32, 0.08)" }}>
+              <div className="rounded-2xl p-4" style={{ background: "rgba(242, 114, 32, 0.08)" }}>
                 <p className="text-xs uppercase tracking-[0.2em]" style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)" }}>
                   {copy.prayer.musicLabel}
                 </p>
@@ -891,17 +809,6 @@ export default function HomePage() {
               className="rounded-3xl p-5 space-y-4"
               style={{ background: "var(--surface-container)", border: "1px solid rgba(88, 66, 55, 0.1)" }}
             >
-              <div className="rounded-2xl p-5 text-center" style={{ background: "linear-gradient(135deg, rgba(242, 114, 32, 0.12) 0%, rgba(242, 114, 32, 0.04) 100%)", border: "1px solid rgba(242, 114, 32, 0.2)" }}>
-                <div className="flex justify-center mb-3">
-                  <OrangeIcon size={48} animated />
-                </div>
-                <p className="text-3xl font-extrabold mb-1" style={{ color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>
-                  {STATS.total.toLocaleString(language === "ko" ? "ko-KR" : language === "en" ? "en-US" : "vi-VN")}
-                </p>
-                <p className="text-xs" style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}>
-                  {copy.hero.statSuffix}
-                </p>
-              </div>
               <div className="rounded-2xl p-5" style={{ background: "rgba(242, 114, 32, 0.06)" }}>
                 <h3 className="text-xs font-bold mb-4 uppercase tracking-[0.2em]" style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)" }}>
                   {copy.prayer.title}
