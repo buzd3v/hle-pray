@@ -226,20 +226,6 @@ export function createSoori(): Soori {
     }
     ctx.stroke();
 
-    // Hanwha swoosh logo
-    const lx = px(0);
-    const ly = py(1.0);
-    const lg = ctx.createLinearGradient(lx - 100, ly, lx + 100, ly);
-    lg.addColorStop(0, "#f8a21c"); lg.addColorStop(1, "#ee6a1e");
-    ctx.strokeStyle = lg; ctx.lineCap = "round";
-    [[11, 30, 0], [9, 18, -16], [7, 6, -30]].forEach(([w, dy, lift]) => {
-      ctx.lineWidth = w;
-      ctx.beginPath();
-      ctx.moveTo(lx - 96 + (30 + lift) * 0.5, ly + dy);
-      ctx.quadraticCurveTo(lx - 10, ly - 26 + lift, lx + 98, ly - 6 + lift * 0.4);
-      ctx.stroke();
-    });
-
     // wordmark (pre-stretched vertically: the belly curves away from the camera)
     ctx.fillStyle = "#1b1a22"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
     const family = "'Segoe UI', Arial, Helvetica, sans-serif";
@@ -254,6 +240,19 @@ export function createSoori(): Soori {
       ctx.restore();
     }
   });
+
+  // the real HLE logo is stamped on once it has loaded
+  let disposed = false;
+  const logoImg = new Image();
+  logoImg.onload = () => {
+    if (disposed) return;
+    const ctx = (jerseyTex.image as HTMLCanvasElement).getContext("2d") as CanvasRenderingContext2D;
+    const w = 0.56 * 400;
+    const h = (w * 395) / 980; // crop of the png that actually holds the mark
+    ctx.drawImage(logoImg, 10, 300, 980, 395, px(0) - w / 2, py(1.0) - h / 2, w, h);
+    jerseyTex.needsUpdate = true;
+  };
+  logoImg.src = "/hle_logo.png";
 
   /* ---------- materials ---------- */
   const M = {
@@ -504,6 +503,7 @@ export function createSoori(): Soori {
   }
 
   function dispose() {
+    disposed = true;
     root.traverse((o) => {
       const mesh = o as THREE.Mesh;
       if (mesh.isMesh) mesh.geometry.dispose();

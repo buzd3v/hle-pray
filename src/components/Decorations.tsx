@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion } from "framer-motion";
 
 interface ArchDecorationProps {
@@ -103,39 +104,13 @@ interface HLElogoProps {
 }
 
 export function HLElogo({ size = 48, className = "" }: HLElogoProps) {
+  const px = `${size / 16}rem`;
   return (
-    <svg
-      width={`${size / 16}rem`}
-      height={`${size / 16}rem`}
-      viewBox="0 0 48 48"
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      className={className}
+    <span
+      className={`inline-flex shrink-0 items-center justify-center rounded-full ${className}`}
+      style={{ width: px, height: px, background: "#f5f3f0", border: "1px solid #3F3F40" }}
     >
-      <circle cx="24" cy="24" r="23" fill="#0e0e0e" stroke="#3F3F40" strokeWidth="1" />
-      <path
-        d="M10 34 L10 22 C10 14 18 14 24 14 C30 14 38 14 38 22 L38 34"
-        stroke="#f27220"
-        strokeWidth="3"
-        strokeLinecap="round"
-        fill="none"
-      />
-      <path
-        d="M10 34 L10 28 C10 22 17 22 24 22 C31 22 38 22 38 28 L38 34"
-        stroke="#3F3F40"
-        strokeWidth="2.5"
-        strokeLinecap="round"
-        fill="none"
-        opacity="0.8"
-      />
-      <path
-        d="M10 34 L10 32 C10 28 16 28 24 28 C32 28 38 28 38 32 L38 34"
-        stroke="#b8babd"
-        strokeWidth="2"
-        strokeLinecap="round"
-        fill="none"
-        opacity="0.6"
-      />
-    </svg>
+      <Image src="/hle_logo.png" alt="Hanwha Life Esports" width={256} height={256} style={{ width: "88%", height: "88%" }} />
+    </span>
   );
 }
