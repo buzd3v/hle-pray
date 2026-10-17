@@ -69,7 +69,8 @@ export function RosterModal({ member, language, roleLabel, onClose }: RosterModa
               <X size="1.125rem" />
             </button>
 
-            <div className="relative aspect-[4/3] w-full shrink-0">
+            <div className="overflow-y-auto overscroll-contain">
+            <div className="relative h-[min(24rem,45vh)] w-full shrink-0">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={member.detailImage}
@@ -107,7 +108,7 @@ export function RosterModal({ member, language, roleLabel, onClose }: RosterModa
               </div>
             </div>
 
-            <div className="space-y-6 overflow-y-auto px-6 pb-6 pt-2">
+            <div className="space-y-6 px-6 pb-6 pt-2">
               <section>
                 <h4
                   className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.25em]"
@@ -178,6 +179,7 @@ export function RosterModal({ member, language, roleLabel, onClose }: RosterModa
               <p className="text-xs opacity-60" style={{ color: "var(--tertiary)", fontFamily: "var(--font-body)" }}>
                 {copy.source}
               </p>
+            </div>
             </div>
           </motion.div>
         </motion.div>
