@@ -34,8 +34,9 @@ interface Api {
 const V = THREE.Vector3;
 const ease = (k: number) => k * k * (3 - 2 * k);
 const SOORI_POS = new V(0, 0, 1.7);
-const LAND = new V(0.5, 0.4, 3.2);
-const HELD = new V(1.7, 2.0, 3.0);
+const SOORI_SCALE = 1.12;
+const LAND = new V(0.5, 0.4, 3.4);
+const HELD = new V(1.9, 2.1, 3.2);
 
 function radialTexture(stops: Array<[number, string]>) {
   const c = document.createElement("canvas");
@@ -266,6 +267,7 @@ export function OrangeGrove({ handleRef, onRequestPick, onPickDone }: OrangeGrov
     scene.add(tree.group);
     const soori = createSoori();
     soori.root.position.copy(SOORI_POS);
+    soori.root.scale.setScalar(SOORI_SCALE);
     scene.add(soori.root);
 
     /* ---------- post-processing ---------- */

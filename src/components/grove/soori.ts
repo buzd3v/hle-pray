@@ -25,15 +25,50 @@ export interface Soori {
 const V = THREE.Vector3;
 const Z = new V(0, 0, 1);
 const Y = new V(0, 1, 0);
-const ACCENT = new THREE.Color("#ff7a1a");
 
-function canvasTex(size: number, draw: (ctx: CanvasRenderingContext2D, size: number) => void, srgb = true) {
+function canvasTex(w: number, h: number, draw: (ctx: CanvasRenderingContext2D) => void) {
   const c = document.createElement("canvas");
-  c.width = c.height = size;
-  draw(c.getContext("2d") as CanvasRenderingContext2D, size);
+  c.width = w;
+  c.height = h;
+  draw(c.getContext("2d") as CanvasRenderingContext2D);
   const t = new THREE.CanvasTexture(c);
-  if (srgb) t.colorSpace = THREE.SRGBColorSpace;
+  t.colorSpace = THREE.SRGBColorSpace;
+  t.anisotropy = 8;
   return t;
+}
+
+/* The body is one smooth egg: a sphere pushed wider towards the bottom, like the plush original. */
+const EGG = { w: 1.27, lean: 0.2, h: 1.55, cy: 1.7 };
+
+function eggRadius(y: number) {
+  const n = THREE.MathUtils.clamp((y - EGG.cy) / EGG.h, -1, 1);
+  return EGG.w * Math.sqrt(1 - n * n) * (1 - EGG.lean * n);
+}
+
+/** Point on the front of the egg at (x, y), pushed `push` along the surface normal. */
+function frontPoint(x: number, y: number, push = 0) {
+  const r = eggRadius(y);
+  const p = new V(x, y, Math.sqrt(Math.max(0, r * r - x * x)));
+  const normal = new V(p.x, (p.y - EGG.cy) * 0.45, p.z).normalize();
+  return { pos: p.addScaledVector(normal, push), normal };
+}
+
+/** Turns a unit-sphere geometry into the egg, with analytic normals so there is no seam. */
+function shapeEgg(geo: THREE.BufferGeometry, push = 0) {
+  const pos = geo.attributes.position;
+  const nor = geo.attributes.normal;
+  const { w, lean, h, cy } = EGG;
+  for (let i = 0; i < pos.count; i++) {
+    const nx = pos.getX(i);
+    const ny = pos.getY(i);
+    const nz = pos.getZ(i);
+    const a = w * (1 - lean * ny);
+    const m = new V(nx / a, (ny + (lean * w * (nx * nx + nz * nz)) / a) / h, nz / a).normalize();
+    pos.setXYZ(i, nx * a + m.x * push, cy + ny * h + m.y * push, nz * a + m.z * push);
+    nor.setXYZ(i, m.x, m.y, m.z);
+  }
+  pos.needsUpdate = true;
+  nor.needsUpdate = true;
 }
 
 interface Pose {
@@ -141,107 +176,110 @@ function poseFor(mode: SooriMode, t: number): Pose {
 
 export function createSoori(): Soori {
   const textures: THREE.Texture[] = [];
-  const tex = (size: number, draw: (ctx: CanvasRenderingContext2D, size: number) => void, srgb = true) => {
-    const t = canvasTex(size, draw, srgb);
+  const tex = (w: number, h: number, draw: (ctx: CanvasRenderingContext2D) => void) => {
+    const t = canvasTex(w, h, draw);
     textures.push(t);
     return t;
   };
 
   /* ---------- textures ---------- */
-  const furTex = tex(256, (ctx, s) => {
-    const img = ctx.createImageData(s, s);
-    for (let i = 0; i < s * s; i++) {
-      const v = Math.pow(Math.random(), 0.75) * 255;
-      img.data[i * 4] = img.data[i * 4 + 1] = img.data[i * 4 + 2] = v;
-      img.data[i * 4 + 3] = 255;
+  const eyeTex = tex(128, 128, (ctx) => {
+    const g = ctx.createRadialGradient(64, 70, 4, 64, 64, 64);
+    g.addColorStop(0, "#1c1512"); g.addColorStop(0.6, "#0a0807"); g.addColorStop(1, "#030203");
+    ctx.fillStyle = g; ctx.fillRect(0, 0, 128, 128);
+    ctx.fillStyle = "#fff"; ctx.globalAlpha = 0.9;
+    ctx.beginPath(); ctx.ellipse(86, 40, 11, 9, -0.4, 0, Math.PI * 2); ctx.fill();
+  });
+
+  // Jersey print, laid out in front-projected body units: x in [-1.28, 1.28], y in [0.15, 1.43], 400px per unit.
+  const px = (x: number) => (x + 1.28) * 400;
+  const py = (y: number) => (1.43 - y) * 400;
+  const neck = (x: number) => 1.1 + 0.2 * Math.pow(x / 1.15, 2);
+  const jerseyTex = tex(1024, 512, (ctx) => {
+    // lace side panels
+    for (const s of [-1, 1]) {
+      ctx.save();
+      ctx.beginPath();
+      ctx.moveTo(px(s * 1.28), py(neck(1.28) - 0.03));
+      for (let x = 1.28; x >= 0.8; x -= 0.04) ctx.lineTo(px(s * x), py(neck(x) - 0.03));
+      ctx.lineTo(px(s * 0.8), py(0.15));
+      ctx.lineTo(px(s * 1.28), py(0.15));
+      ctx.closePath();
+      ctx.clip();
+      const g = ctx.createLinearGradient(px(s * 1.28), 0, px(s * 0.8), 0);
+      g.addColorStop(0, "rgba(168,160,194,.7)"); g.addColorStop(1, "rgba(168,160,194,0)");
+      ctx.fillStyle = g; ctx.fillRect(0, 0, 1024, 512);
+      ctx.strokeStyle = "rgba(255,255,255,.4)"; ctx.lineWidth = 2;
+      for (let k = -520; k < 1100; k += 16) {
+        ctx.beginPath(); ctx.moveTo(k, 0); ctx.lineTo(k + 512, 512); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(k + 512, 0); ctx.lineTo(k, 512); ctx.stroke();
+      }
+      ctx.restore();
     }
-    ctx.putImageData(img, 0, 0);
-  }, false);
-  furTex.wrapS = furTex.wrapT = THREE.RepeatWrapping;
-  furTex.repeat.set(4, 2);
-  furTex.generateMipmaps = false;
-  furTex.minFilter = THREE.LinearFilter;
 
-  const eyeTex = tex(512, (ctx, s) => {
-    ctx.fillStyle = "#0b0604"; ctx.fillRect(0, 0, s, s);
-    let g = ctx.createRadialGradient(256, 360, 10, 256, 290, 250);
-    g.addColorStop(0, "#b77243"); g.addColorStop(0.42, "#6a371f"); g.addColorStop(0.8, "#2a140b"); g.addColorStop(1, "#0d0604");
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(256, 256, 250, 0, Math.PI * 2); ctx.fill();
-    g = ctx.createRadialGradient(256, 228, 0, 256, 228, 165);
-    g.addColorStop(0, "#040201"); g.addColorStop(0.8, "#120804"); g.addColorStop(1, "rgba(18,8,4,0)");
-    ctx.fillStyle = g; ctx.beginPath(); ctx.arc(256, 228, 165, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = "#fff";
-    ctx.beginPath(); ctx.ellipse(338, 150, 66, 60, -0.3, 0, Math.PI * 2); ctx.fill();
-    ctx.globalAlpha = 0.95; ctx.beginPath(); ctx.arc(178, 352, 24, 0, Math.PI * 2); ctx.fill();
-    ctx.globalAlpha = 0.25; ctx.beginPath(); ctx.ellipse(300, 400, 70, 26, -0.25, 0, Math.PI * 2); ctx.fill();
-  });
+    // neckline trim
+    ctx.strokeStyle = "#e6c8b6"; ctx.lineWidth = 14; ctx.lineJoin = "round"; ctx.lineCap = "round";
+    ctx.beginPath();
+    for (let x = -1.25; x <= 1.25; x += 0.02) {
+      if (x === -1.25) ctx.moveTo(px(x), py(neck(x)));
+      else ctx.lineTo(px(x), py(neck(x)));
+    }
+    ctx.stroke();
 
-  const blushTex = tex(128, (ctx, s) => {
-    const g = ctx.createRadialGradient(64, 64, 0, 64, 64, 64);
-    g.addColorStop(0, "rgba(255,140,150,.85)"); g.addColorStop(0.55, "rgba(255,150,160,.45)"); g.addColorStop(1, "rgba(255,160,170,0)");
-    ctx.fillStyle = g; ctx.fillRect(0, 0, s, s);
-  });
+    // Hanwha swoosh logo
+    const lx = px(0);
+    const ly = py(1.0);
+    const lg = ctx.createLinearGradient(lx - 100, ly, lx + 100, ly);
+    lg.addColorStop(0, "#f8a21c"); lg.addColorStop(1, "#ee6a1e");
+    ctx.strokeStyle = lg; ctx.lineCap = "round";
+    [[11, 30, 0], [9, 18, -16], [7, 6, -30]].forEach(([w, dy, lift]) => {
+      ctx.lineWidth = w;
+      ctx.beginPath();
+      ctx.moveTo(lx - 96 + (30 + lift) * 0.5, ly + dy);
+      ctx.quadraticCurveTo(lx - 10, ly - 26 + lift, lx + 98, ly - 6 + lift * 0.4);
+      ctx.stroke();
+    });
 
-  const logoTex = tex(256, (ctx) => {
-    ctx.strokeStyle = "#fff"; ctx.lineCap = "round";
-    ctx.lineWidth = 22; ctx.beginPath(); ctx.moveTo(48, 150); ctx.quadraticCurveTo(120, 70, 210, 92); ctx.stroke();
-    ctx.lineWidth = 16; ctx.beginPath(); ctx.moveTo(70, 186); ctx.quadraticCurveTo(130, 128, 196, 134); ctx.stroke();
+    // wordmark (pre-stretched vertically: the belly curves away from the camera)
+    ctx.fillStyle = "#1b1a22"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    const family = "'Segoe UI', Arial, Helvetica, sans-serif";
+    ctx.font = `700 60px ${family}`;
+    const size = (60 * 400) / ctx.measureText("Hanwha Life").width;
+    ctx.font = `700 ${size}px ${family}`;
+    for (const [str, y] of [["Hanwha Life", 0.76], ["Esports", 0.5]] as const) {
+      ctx.save();
+      ctx.translate(px(0), py(y));
+      ctx.scale(1, 1.25);
+      ctx.fillText(str, 0, 0);
+      ctx.restore();
+    }
   });
 
   /* ---------- materials ---------- */
   const M = {
-    furBase: new THREE.MeshStandardMaterial({ color: "#d6cfc9", roughness: 1 }),
-    white: new THREE.MeshPhysicalMaterial({ color: "#f7f3ef", roughness: 0.85, sheen: 1, sheenRoughness: 0.4, sheenColor: new THREE.Color("#ffffff") }),
-    darkFeather: new THREE.MeshPhysicalMaterial({ color: "#34333a", roughness: 0.8, sheen: 1, sheenRoughness: 0.5, sheenColor: new THREE.Color("#8a8a95") }),
-    black: new THREE.MeshPhysicalMaterial({ color: "#121214", roughness: 0.3, metalness: 0.15, clearcoat: 0.9, clearcoatRoughness: 0.2 }),
-    matte: new THREE.MeshStandardMaterial({ color: "#1d1d21", roughness: 0.75 }),
-    cushion: new THREE.MeshPhysicalMaterial({ color: "#25252a", roughness: 0.9, sheen: 0.6, sheenColor: new THREE.Color("#555") }),
-    accent: new THREE.MeshStandardMaterial({ color: ACCENT, emissive: ACCENT, emissiveIntensity: 7, roughness: 0.4 }),
-    beakTop: new THREE.MeshPhysicalMaterial({ color: "#f7b52e", roughness: 0.35, clearcoat: 0.7, clearcoatRoughness: 0.3 }),
-    beakBot: new THREE.MeshPhysicalMaterial({ color: "#e8902a", roughness: 0.4, clearcoat: 0.5 }),
+    body: new THREE.MeshPhysicalMaterial({
+      color: "#f5f0f7", roughness: 0.5, clearcoat: 0.3, clearcoatRoughness: 0.55,
+      sheen: 0.6, sheenRoughness: 0.5, sheenColor: new THREE.Color("#e7defa"),
+    }),
+    jersey: new THREE.MeshStandardMaterial({
+      map: jerseyTex, transparent: true, roughness: 0.85, depthWrite: false,
+      polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2,
+    }),
+    cup: new THREE.MeshPhysicalMaterial({ color: "#8d91b4", roughness: 0.42, clearcoat: 0.5, clearcoatRoughness: 0.3, metalness: 0.1 }),
+    cupCap: new THREE.MeshPhysicalMaterial({ color: "#a9adcd", roughness: 0.4, clearcoat: 0.6 }),
+    pad: new THREE.MeshStandardMaterial({ color: "#4d5070", roughness: 0.8 }),
+    boom: new THREE.MeshStandardMaterial({ color: "#2b2b33", roughness: 0.5 }),
+    micTip: new THREE.MeshPhysicalMaterial({ color: "#44444f", roughness: 0.4, clearcoat: 0.6 }),
+    beakTop: new THREE.MeshPhysicalMaterial({ color: "#f6a23a", roughness: 0.4, clearcoat: 0.6, clearcoatRoughness: 0.3 }),
+    beakBot: new THREE.MeshPhysicalMaterial({ color: "#f2992f", roughness: 0.42, clearcoat: 0.5 }),
     mouth: new THREE.MeshStandardMaterial({ color: "#7a2a22", roughness: 0.6 }),
-    toe: new THREE.MeshPhysicalMaterial({ color: "#161619", roughness: 0.45, clearcoat: 0.6, clearcoatRoughness: 0.3 }),
-    eye: new THREE.MeshPhysicalMaterial({ map: eyeTex, roughness: 0.12, clearcoat: 1, clearcoatRoughness: 0.04, emissive: "#ffffff", emissiveMap: eyeTex, emissiveIntensity: 0.12 }),
-    blush: new THREE.MeshBasicMaterial({ map: blushTex, transparent: true, depthWrite: false }),
-    logo: new THREE.MeshBasicMaterial({ map: logoTex, transparent: true, depthWrite: false }),
+    toe: new THREE.MeshPhysicalMaterial({ color: "#1d1c22", roughness: 0.45, clearcoat: 0.5, clearcoatRoughness: 0.3 }),
+    eye: new THREE.MeshPhysicalMaterial({ map: eyeTex, roughness: 0.1, clearcoat: 1, clearcoatRoughness: 0.04 }),
+    arc: new THREE.MeshStandardMaterial({ color: "#16141a", roughness: 0.5 }),
   };
-
-  const FUR_LAYERS = 16;
-  const furMats: THREE.MeshStandardMaterial[] = [];
-  for (let i = 1; i <= FUR_LAYERS; i++) {
-    const f = i / FUR_LAYERS;
-    furMats.push(new THREE.MeshStandardMaterial({
-      color: new THREE.Color().lerpColors(new THREE.Color("#d9d2cb"), new THREE.Color("#ffffff"), Math.pow(f, 0.6)),
-      roughness: 1, alphaMap: furTex, alphaTest: 0.12 + f * 0.82,
-    }));
-  }
-  function addFur(mesh: THREE.Mesh, radius: number, length: number) {
-    for (let i = 1; i <= FUR_LAYERS; i++) {
-      const shell = new THREE.Mesh(mesh.geometry, furMats[i - 1]);
-      shell.scale.setScalar(1 + (length / radius) * (i / FUR_LAYERS));
-      shell.receiveShadow = true;
-      mesh.add(shell);
-    }
-  }
 
   /* ---------- geometry helpers ---------- */
   const sphereGeo = new THREE.SphereGeometry(1, 48, 32);
-  const featherGeo = new THREE.SphereGeometry(1, 32, 24).translate(0, 1, 0);
-  {
-    const p = featherGeo.attributes.position;
-    for (let i = 0; i < p.count; i++) {
-      const t = p.getY(i) / 2;
-      const k = 0.7 + 0.45 * Math.sin(Math.PI * Math.min(1, t * 1.15));
-      p.setX(i, p.getX(i) * k);
-    }
-    featherGeo.computeVertexNormals();
-  }
-  function feather(w: number, h: number, d: number, mat: THREE.Material = M.white) {
-    const m = new THREE.Mesh(featherGeo, mat);
-    m.scale.set(w, h / 2, d);
-    m.castShadow = true;
-    return m;
-  }
   function blob(mat: THREE.Material, sx: number, sy: number, sz: number) {
     const m = new THREE.Mesh(sphereGeo, mat);
     m.scale.set(sx, sy, sz);
@@ -262,199 +300,166 @@ export function createSoori(): Soori {
   const torso = new THREE.Group();
   bird.add(torso);
 
-  const body = new THREE.Mesh(sphereGeo, M.furBase);
-  body.scale.set(0.9, 0.84, 0.84); body.position.y = 0.94; body.castShadow = true;
-  addFur(body, 0.87, 0.06);
+  const bodyGeo = new THREE.SphereGeometry(1, 96, 64);
+  shapeEgg(bodyGeo);
+  const body = new THREE.Mesh(bodyGeo, M.body);
+  body.castShadow = true;
+  body.receiveShadow = true;
   torso.add(body);
 
-  // chest fluff (scalloped bib)
-  ([[1.26, 0.8, 7, 1.9], [1.08, 0.86, 6, 1.5]] as const).forEach(([y, rr, n, spread]) => {
-    for (let i = 0; i < n; i++) {
-      const a = (i / (n - 1) - 0.5) * spread;
-      const m = blob(M.white, 0.2, 0.14, 0.09);
-      m.position.set(Math.sin(a) * rr, y, Math.cos(a) * rr * 0.95);
-      m.rotation.set(0.3, a, 0);
-      torso.add(m);
-    }
-  });
+  // jersey print: a patch of the egg surface, lifted a hair, UV-mapped straight from the front
+  {
+    const patch = new THREE.SphereGeometry(1, 96, 32, Math.PI / 2 - 1.35, 2.7, 1.75, 1.15);
+    shapeEgg(patch, 0.01);
+    const p = patch.attributes.position;
+    const uv = patch.attributes.uv;
+    for (let i = 0; i < p.count; i++) uv.setXY(i, (p.getX(i) + 1.28) / 2.56, (p.getY(i) - 0.15) / 1.28);
+    torso.add(new THREE.Mesh(patch, M.jersey));
+  }
 
-  // wings
+  // little nub arms (they take over the old wing animation)
+  const armGeo = new THREE.CapsuleGeometry(0.19, 0.28, 12, 24);
+  armGeo.translate(0, 0.38, 0);
   function makeWing(s: number) {
     const pivot = new THREE.Group();
-    pivot.position.set(s * 0.74, 1.3, 0.1);
-    pivot.rotation.y = -s * 0.32;
+    pivot.position.set(s * 1.1, 1.2, 0.45);
     const inner = new THREE.Group();
     pivot.add(inner);
-    ([[1.95, 0.72, 0.34], [2.3, 0.98, 0.38], [2.65, 0.95, 0.36], [2.95, 0.8, 0.32], [3.22, 0.6, 0.26]] as const).forEach(([ang, len, w], i) => {
-      const f = feather(w, len, 0.13);
-      f.rotation.z = -s * ang; f.position.z = -i * 0.025;
-      inner.add(f);
-    });
-    const sh = blob(M.white, 0.36, 0.38, 0.2);
-    sh.position.set(s * 0.05, -0.05, 0.02);
-    inner.add(sh);
+    const arm = new THREE.Mesh(armGeo, M.body);
+    arm.rotation.z = -s * 2.55;
+    arm.castShadow = true;
+    inner.add(arm);
     torso.add(pivot);
     return inner;
   }
   const wingR = makeWing(1);
   const wingL = makeWing(-1);
 
-  // tail
+  // tiny tail nub
   const tail = new THREE.Group();
-  tail.position.set(0, 0.74, -0.64);
+  tail.position.set(0, 0.95, -1.15);
   torso.add(tail);
-  const tailFeathers: Array<[number, number, number, boolean?]> = [
-    [-0.5, 0.75, 0.2], [0.5, 0.75, 0.2], [-0.25, 0.92, 0.22], [0.25, 0.92, 0.22], [0, 1.1, 0.24, true],
-  ];
-  tailFeathers.forEach(([fan, len, w, dark]) => {
-    const g = new THREE.Group();
-    g.rotation.order = "YXZ";
-    g.rotation.set(-1.05 - (dark ? 0.12 : 0), fan, 0);
-    g.add(feather(w, len, 0.1));
-    if (dark) {
-      const tip = feather(w * 0.92, len * 0.46, 0.105, M.darkFeather);
-      tip.position.y = len * 0.6;
-      g.add(tip);
-    }
-    tail.add(g);
-  });
+  const nub = blob(M.body, 0.34, 0.3, 0.26);
+  nub.position.set(0, 0.05, -0.08);
+  tail.add(nub);
 
-  // feet
+  // feet, mostly tucked under the belly
   function makeFoot(s: number) {
     const g = new THREE.Group();
-    g.position.set(s * 0.36, 0, 0.18);
-    g.rotation.y = s * 0.22;
-    [-0.18, 0, 0.18].forEach((x, i) => {
-      const t = blob(M.toe, 0.135, 0.11, 0.2);
-      t.position.set(x, 0.1, 0.14 + (i === 1 ? 0.05 : 0));
+    g.position.set(s * 0.4, 0, 0.12);
+    g.rotation.y = s * 0.2;
+    [-0.17, 0, 0.17].forEach((x, i) => {
+      const t = blob(M.toe, 0.12, 0.1, 0.18);
+      t.position.set(x, 0.12, 0.14 + (i === 1 ? 0.04 : 0));
       t.rotation.y = x * 1.3;
       g.add(t);
     });
-    const heel = blob(M.toe, 0.22, 0.15, 0.2);
-    heel.position.set(0, 0.13, -0.04);
+    const heel = blob(M.toe, 0.2, 0.14, 0.2);
+    heel.position.set(0, 0.2, -0.02);
     g.add(heel);
     bird.add(g);
   }
   makeFoot(1);
   makeFoot(-1);
 
-  // head
-  const R = 1.13;
+  /* ---------- face (rotates about the neck axis; the egg is a body of revolution so it stays on the surface) ---------- */
+  const NECK_Y = 1.6;
   const headPivot = new THREE.Group();
-  headPivot.position.set(0, 1.58, 0);
+  headPivot.position.set(0, NECK_Y, 0);
   torso.add(headPivot);
   const head = new THREE.Group();
-  head.position.set(0, 0.64, 0.04);
+  head.position.set(0, -NECK_Y, 0);
   headPivot.add(head);
-  const headMesh = new THREE.Mesh(new THREE.SphereGeometry(R, 64, 48), M.furBase);
-  headMesh.castShadow = true;
-  addFur(headMesh, R, 0.07);
-  head.add(headMesh);
 
-  // tuft
+  // swept-back tuft with a smaller spike behind it
+  function spike(r: number, h: number, bend: number) {
+    const geo = new THREE.ConeGeometry(r, h, 32, 10).translate(0, h / 2, 0);
+    const p = geo.attributes.position;
+    for (let i = 0; i < p.count; i++) p.setX(i, p.getX(i) + bend * Math.pow(p.getY(i) / h, 2));
+    geo.computeVertexNormals();
+    const m = new THREE.Mesh(geo, M.body);
+    m.scale.z = 0.7;
+    m.castShadow = true;
+    return m;
+  }
   const tuft = new THREE.Group();
-  tuft.position.set(0, R - 0.14, 0.06);
+  tuft.position.set(0, EGG.cy + EGG.h - 0.08, 0.02);
   head.add(tuft);
-  ([[0, 0.78, 0.3, -0.1], [0.62, 0.55, 0.26, 0.05], [-0.58, 0.52, 0.25, 0.1], [0.22, 0.5, 0.24, -0.6], [-0.28, 0.46, 0.23, -0.65]] as const).forEach(([rz, h, w, rx]) => {
-    const f = feather(w, h, 0.16);
-    f.rotation.set(rx, 0, rz);
-    tuft.add(f);
-  });
+  const mainSpike = spike(0.23, 0.62, 0.2);
+  mainSpike.rotation.z = -0.08;
+  const backSpike = spike(0.12, 0.34, 0.1);
+  backSpike.position.set(0.3, -0.03, -0.05);
+  backSpike.rotation.z = -0.5;
+  tuft.add(mainSpike, backSpike);
 
-  // eyes + blush
+  // eyes: small glossy dots set wide apart
   const eyes: Array<{ ball: THREE.Mesh; arc: THREE.Mesh }> = [];
+  const EYE_H = 0.17;
   [1, -1].forEach((s) => {
-    const dir = new V(s * 0.39, 0.0, 0.92).normalize();
+    const { pos, normal } = frontPoint(s * 0.68, 1.58, 0.02);
     const g = new THREE.Group();
-    g.position.copy(dir).multiplyScalar(R - 0.02);
-    g.quaternion.setFromUnitVectors(Z, dir);
+    g.position.copy(pos);
+    g.quaternion.setFromUnitVectors(Z, normal);
     const ball = new THREE.Mesh(eyeGeo, M.eye);
-    ball.scale.set(0.3, 0.345, 0.14);
-    const arc = new THREE.Mesh(new THREE.TorusGeometry(0.17, 0.045, 12, 32, Math.PI), M.black);
-    arc.position.set(0, -0.04, 0.1);
+    ball.scale.set(0.15, EYE_H, 0.08);
+    const arc = new THREE.Mesh(new THREE.TorusGeometry(0.14, 0.034, 12, 32, Math.PI), M.arc);
+    arc.position.set(0, -0.03, 0.05);
     arc.visible = false;
     g.add(ball, arc);
     head.add(g);
     eyes.push({ ball, arc });
-    const bdir = new V(s * 0.62, -0.24, 0.75).normalize();
-    const blush = new THREE.Mesh(new THREE.CircleGeometry(0.21, 32), M.blush);
-    blush.position.copy(bdir).multiplyScalar(R + 0.055);
-    blush.quaternion.setFromUnitVectors(Z, bdir);
-    head.add(blush);
   });
 
-  // beak
+  // small flat duck beak
   const beak = new THREE.Group();
   {
-    const bd = new V(0, -0.15, 1).normalize();
-    beak.position.copy(bd).multiplyScalar(R - 0.04);
-    beak.quaternion.setFromUnitVectors(Z, bd);
+    const { pos, normal } = frontPoint(0, 1.5, -0.01);
+    beak.position.copy(pos);
+    beak.quaternion.setFromUnitVectors(Z, normal);
     head.add(beak);
   }
-  const upperGeo = new THREE.ConeGeometry(0.17, 0.32, 40);
-  upperGeo.rotateX(Math.PI / 2);
-  const upper = new THREE.Mesh(upperGeo, M.beakTop);
-  upper.scale.set(1.45, 0.66, 1.1); upper.position.set(0, 0.035, 0.12); upper.rotation.x = 0.1; upper.castShadow = true;
-  const lowerGeo = new THREE.ConeGeometry(0.13, 0.22, 32);
-  lowerGeo.rotateX(Math.PI / 2);
-  const lower = new THREE.Mesh(lowerGeo, M.beakBot);
-  lower.scale.set(1.3, 0.55, 1.05); lower.position.set(0, -0.04, 0.08);
-  const mouth = blob(M.mouth, 0.12, 0.06, 0.08);
-  mouth.position.set(0, -0.015, 0.08);
-  beak.add(upper, lower, mouth);
+  const upper = blob(M.beakTop, 0.3, 0.13, 0.17);
+  upper.position.set(0, 0.0, 0.0);
+  const lower = blob(M.beakBot, 0.27, 0.095, 0.15);
+  lower.position.set(0, -0.045, -0.01);
+  const mouth = blob(M.mouth, 0.2, 0.05, 0.08);
+  mouth.position.set(0, -0.04, -0.02);
+  beak.add(mouth, lower, upper);
 
-  // headphones
-  const hp = new THREE.Group();
-  hp.rotation.x = -0.1;
-  head.add(hp);
-  const band = new THREE.Mesh(new THREE.TorusGeometry(R + 0.14, 0.08, 20, 120, Math.PI), M.black);
-  band.castShadow = true;
-  hp.add(band);
-  const pad = new THREE.Mesh(new THREE.TorusGeometry(R + 0.07, 0.05, 12, 96, Math.PI * 0.62), M.cushion);
-  pad.rotation.z = Math.PI * 0.19;
-  hp.add(pad);
+  // headphones: lavender ear cups on the sides
   [1, -1].forEach((s) => {
     const cup = new THREE.Group();
-    cup.position.set(s * (R + 0.11), -0.1, 0);
-    hp.add(cup);
-    const slider = new THREE.Mesh(new THREE.BoxGeometry(0.14, 0.32, 0.16), M.black);
-    slider.position.set(s * 0.03, 0.34, 0);
-    cup.add(slider);
-    const shell = new THREE.Mesh(new THREE.CylinderGeometry(0.4, 0.42, 0.26, 64), M.black);
-    shell.rotation.z = Math.PI / 2; shell.castShadow = true;
+    cup.position.set(s * 1.33, 1.74, 0);
+    head.add(cup);
+    const shell = blob(M.cup, 0.15, 0.44, 0.38);
     cup.add(shell);
-    const cush = new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.1, 16, 48), M.cushion);
-    cush.rotation.y = Math.PI / 2; cush.position.x = -s * 0.15;
-    cup.add(cush);
-    const cap = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.38, 0.06, 64), M.matte);
-    cap.rotation.z = Math.PI / 2; cap.position.x = s * 0.15;
+    const cap = blob(M.cupCap, 0.04, 0.3, 0.26);
+    cap.position.x = s * 0.13;
     cup.add(cap);
-    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.31, 0.024, 12, 96), M.accent);
-    ring.rotation.y = Math.PI / 2; ring.position.x = s * 0.185;
-    cup.add(ring);
-    const logo = new THREE.Mesh(new THREE.CircleGeometry(0.19, 48), M.logo);
-    logo.rotation.y = (s * Math.PI) / 2; logo.position.x = s * 0.186;
-    cup.add(logo);
+    const cush = blob(M.pad, 0.1, 0.36, 0.3);
+    cush.position.x = -s * 0.1;
+    cup.add(cush);
   });
-  // mic boom
+
+  // mic boom hugging the front, from the viewer's-left cup down to the mouth
   {
-    const k = R / 1.05;
-    const curve = new THREE.CatmullRomCurve3(
-      [new V(1.13, -0.38, 0.18), new V(1.05, -0.6, 0.6), new V(0.72, -0.72, 0.98), new V(0.3, -0.7, 1.13)].map((p) => p.multiplyScalar(k)),
-    );
-    const boom = new THREE.Mesh(new THREE.TubeGeometry(curve, 64, 0.032, 12), M.black);
+    const pts = [
+      new V(-1.4, 1.54, 0.26),
+      frontPoint(-1.22, 1.38, 0.1).pos,
+      frontPoint(-1.0, 1.22, 0.11).pos,
+      frontPoint(-0.8, 1.14, 0.13).pos,
+    ];
+    const curve = new THREE.CatmullRomCurve3(pts);
+    const boom = new THREE.Mesh(new THREE.TubeGeometry(curve, 64, 0.03, 12), M.boom);
     boom.castShadow = true;
-    hp.add(boom);
+    head.add(boom);
     const end = curve.getPoint(1);
     const tan = curve.getTangent(1);
-    const tip = new THREE.Mesh(new THREE.CapsuleGeometry(0.075, 0.16, 8, 20), M.black);
+    const tip = new THREE.Mesh(new THREE.CapsuleGeometry(0.08, 0.12, 8, 20), M.micTip);
     tip.quaternion.setFromUnitVectors(Y, tan);
     tip.position.copy(end).addScaledVector(tan, 0.07);
-    hp.add(tip);
-    const mr = new THREE.Mesh(new THREE.TorusGeometry(0.078, 0.014, 8, 32), M.accent);
-    mr.quaternion.setFromUnitVectors(Z, tan);
-    mr.position.copy(end).addScaledVector(tan, -0.02);
-    hp.add(mr);
+    tip.castShadow = true;
+    head.add(tip);
   }
 
   const meshes: THREE.Mesh[] = [];
@@ -484,7 +489,7 @@ export function createSoori(): Soori {
     bird.position.y = cur.y;
     bird.scale.set(1 + cur.sq * 0.6, 1 - cur.sq, 1 + cur.sq * 0.6);
     torso.rotation.set(0, cur.turn, cur.sway);
-    headPivot.rotation.set(cur.hx, cur.hy, cur.hz);
+    headPivot.rotation.set(cur.hx * 0.5, cur.hy * 0.75, cur.hz * 0.8);
     wingR.rotation.set(cur.wrf, 0, cur.wr);
     wingL.rotation.set(cur.wlf, 0, -cur.wl);
     tail.rotation.set(cur.tx, cur.ty, 0);
@@ -492,11 +497,10 @@ export function createSoori(): Soori {
     for (const e of eyes) {
       e.ball.visible = !happy;
       e.arc.visible = happy;
-      e.ball.scale.y = 0.345 * blink;
+      e.ball.scale.y = EYE_H * blink;
     }
-    lower.rotation.x = 0.12 + cur.mouth * 0.4;
+    lower.rotation.x = cur.mouth * 0.35;
     mouth.scale.y = 0.05 + cur.mouth * 0.05;
-    M.accent.emissiveIntensity = 7 + sin(now * 2) * 1.2;
   }
 
   function dispose() {
@@ -505,7 +509,6 @@ export function createSoori(): Soori {
       if (mesh.isMesh) mesh.geometry.dispose();
     });
     Object.values(M).forEach((m) => m.dispose());
-    furMats.forEach((m) => m.dispose());
     textures.forEach((t) => t.dispose());
   }
 

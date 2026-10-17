@@ -32,12 +32,16 @@ function rng(seed: number) {
   };
 }
 
+const FRUIT_COUNT = 64;
+
 // [angle around the tree (0 = facing the camera), angle from the top]
-const FRUIT_SPOTS: Array<[number, number]> = [
-  [-0.55, 1.25], [0.35, 1.05], [0.95, 1.3], [-1.15, 1.0], [0.0, 1.55],
-  [1.5, 0.95], [-0.2, 0.62], [-1.6, 1.4], [0.65, 0.62], [2.6, 1.15], [-2.5, 1.0],
-  [0.2, 0.9], [-0.95, 0.78], [1.1, 0.8], [-0.4, 1.35],
-];
+// A golden-angle spiral keeps the oranges evenly spread over the dome without bunching up.
+const FRUIT_SPOTS: Array<[number, number]> = Array.from({ length: FRUIT_COUNT }, (_, i) => {
+  const k = (i + 0.5) / FRUIT_COUNT;
+  const theta = i * 2.399963 + Math.sin(i * 12.9898) * 0.18;
+  const phi = 0.4 + 1.3 * Math.sqrt(k) + Math.sin(i * 78.233) * 0.06;
+  return [theta, phi];
+});
 
 export function createOrangeTree(): OrangeTree {
   const rand = rng(20260);
@@ -106,6 +110,7 @@ export function createOrangeTree(): OrangeTree {
     mat(new THREE.MeshStandardMaterial({ color: c.clone().multiplyScalar(0.8), roughness: 0.9 })),
   );
   const blobCount = 30;
+  const blobMeshes: THREE.Mesh[] = [];
   for (let i = 0; i < blobCount; i++) {
     const theta = rand() * Math.PI * 2;
     const phi = Math.acos(1 - rand() * 1.15); // keep it a dome, a bit flat underneath
@@ -121,6 +126,7 @@ export function createOrangeTree(): OrangeTree {
     m.castShadow = true;
     m.receiveShadow = true;
     canopy.add(m);
+    blobMeshes.push(m);
   }
 
   // leaf cards to break up the smooth blobs
@@ -175,11 +181,14 @@ export function createOrangeTree(): OrangeTree {
   const calyxGeo = track(new THREE.SphereGeometry(0.12, 16, 12));
   const stemGeo = track(new THREE.CylinderGeometry(0.014, 0.02, 0.2, 8));
   const leafFruitGeo = track(new THREE.SphereGeometry(1, 12, 8));
-  const hitGeo = track(new THREE.SphereGeometry(0.7, 8, 6));
+  const hitGeo = track(new THREE.SphereGeometry(0.55, 8, 6));
   const calyxMat = mat(new THREE.MeshStandardMaterial({ color: "#2f6b2a", roughness: 0.8 }));
   const stemMat = mat(new THREE.MeshStandardMaterial({ color: "#4b6b2a", roughness: 0.9 }));
   const fruitLeafMat = mat(new THREE.MeshStandardMaterial({ color: "#3a9a3a", roughness: 0.6 }));
   const hitMat = mat(new THREE.MeshBasicMaterial({ visible: false }));
+
+  group.updateMatrixWorld(true);
+  const caster = new THREE.Raycaster();
 
   const fruits: Fruit[] = FRUIT_SPOTS.map(([theta, phi], index) => {
     const material = mat(
@@ -217,11 +226,17 @@ export function createOrangeTree(): OrangeTree {
       o.userData.fruit = index;
     });
 
-    const home = new THREE.Vector3(
-      RX * 0.97 * Math.sin(phi) * Math.sin(theta),
-      RY * 0.97 * Math.cos(phi) - 0.15,
-      RZ * 0.97 * Math.sin(phi) * Math.cos(theta),
-    );
+    // Hang the orange on the outermost leaf blob along its direction, so none end up buried in foliage.
+    const dir = new THREE.Vector3(Math.sin(phi) * Math.sin(theta), Math.cos(phi), Math.sin(phi) * Math.cos(theta)).normalize();
+    caster.set(CANOPY_CENTER.clone().addScaledVector(dir, 12), dir.clone().negate());
+    const surface = caster.intersectObjects(blobMeshes, false)[0];
+    const home = surface
+      ? surface.point.clone().sub(CANOPY_CENTER).addScaledVector(dir, 0.14)
+      : new THREE.Vector3(
+          RX * 0.97 * Math.sin(phi) * Math.sin(theta),
+          RY * 0.97 * Math.cos(phi) - 0.15,
+          RZ * 0.97 * Math.sin(phi) * Math.cos(theta),
+        );
     g.position.copy(home);
     canopy.add(g);
     return { index, group: g, home, material, phase: rand() * Math.PI * 2, picked: false, hover: 0 };
