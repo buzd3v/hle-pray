@@ -185,7 +185,7 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
       title: "LỜI CHÚC CHO HLE",
       subtitle: "Chọn sẵn một câu hoặc tự viết lời chúc của riêng bạn cho HLE.",
       presets: [
-        "HLE vô địch Worlds 2026",
+        "HLE vô địch Worlds 2026 nhaaa",
         "Zeus bùng nổ ở đường trên",
         "Kanavi kiểm soát hoàn toàn nhịp độ trận đấu",
         "Zeka tạo ra khác biệt ở mid",
@@ -263,7 +263,7 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
       title: "WISHES FOR HLE",
       subtitle: "Pick a preset quote or write your own wish for HLE.",
       presets: [
-        "HLE wins Worlds 2026",
+        "HLE wins Worlds 2026 pleaseee",
         "Zeus dominates the top lane",
         "Kanavi controls the entire tempo",
         "Zeka creates mid lane gaps",
@@ -341,7 +341,7 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
       title: "HLE 응원 메시지",
       subtitle: "미리 준비된 문구를 고르거나 HLE를 위한 나만의 응원 메시지를 작성하세요.",
       presets: [
-        "HLE가 2026 월드 챔피언십을 제패하길",
+        "HLE가 2026 월드 챔피언십을 제패하길 제발~",
         "Zeus가 탑 라인을 장악하길",
         "Kanavi가 경기 템포를 지배하길",
         "Zeka가 미드 차이를 만들길",
