@@ -98,6 +98,7 @@ function formatTime(date: Date, language: Language) {
 
 const LANGUAGE_KEY = "hle-pray-language";
 const MUTED_KEY = "hle-pray-muted";
+const NAME_KEY = "hle-pray-name";
 
 function parseLanguage(stored: string | null): Language {
   if (stored === "vi" || stored === "en" || stored === "ko") return stored;
@@ -112,7 +113,15 @@ export default function HomePage() {
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
   const [customText, setCustomText] = useState("");
-  const [name, setName] = useState("");
+  // The name is remembered in this browser, so visitors only type it once.
+  // The draft keeps the input working even when storage is unavailable (private mode).
+  const storedName = useLocalStorageValue(NAME_KEY);
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
+  const name = nameDraft ?? storedName ?? "";
+  const setName = (value: string) => {
+    setNameDraft(value);
+    writeLocalStorageValue(NAME_KEY, value);
+  };
   const [anonymous, setAnonymous] = useState(false);
   const [grove, setGrove] = useState<{
     taken: boolean;
@@ -208,7 +217,6 @@ export default function HomePage() {
     addPrayer(name, text);
     setSelectedPreset(null);
     setCustomText("");
-    setName("");
     setAnonymous(false);
 
     const f = flow.current;
