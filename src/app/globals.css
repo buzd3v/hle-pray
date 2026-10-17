@@ -84,6 +84,16 @@
 
 html { scroll-behavior: smooth; }
 
+/*
+ * Desktop (>= 850px viewport) is one fixed design drawn at 1200px.
+ * Below 1200px the root font size shrinks with the viewport width, so every rem-based
+ * size (spacing, text, max-w-6xl, icons) scales together and the page looks the same
+ * as on a wide screen. Below 850px the mobile layout uses the normal 16px.
+ */
+@media (min-width: 850px) {
+  html { font-size: min(16px, calc(100vw / 75)); }
+}
+
 body {
   background: var(--background);
   color: var(--on-surface);

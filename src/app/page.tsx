@@ -13,7 +13,7 @@ import { usePrayers } from "@/hooks/usePrayers";
 import { useLocalStorageValue, writeLocalStorageValue } from "@/hooks/useLocalStorageValue";
 import { ACHIEVEMENT_CARDS, DEFAULT_LANGUAGE, MUSIC_TRACKS, ROSTER_MEMBERS, ROSTER_MODAL_COPY, SITE_COPY } from "@/lib/siteContent";
 import { RosterModal } from "@/components/RosterModal";
-import { STATS, SAMPLE_PRAYERS } from "@/types/prayer";
+import { STATS } from "@/types/prayer";
 import type { Language, Prayer } from "@/types/prayer";
 
 const FLOOR_CANDLES = [
@@ -161,7 +161,7 @@ export default function HomePage() {
 
   const copy = SITE_COPY[language];
   const presets = copy.prayer.presets;
-  const allPrayers = [...prayers, ...SAMPLE_PRAYERS].slice(0, 20);
+  const allPrayers = prayers.slice(0, 20);
 
   const handleLanguageChange = (nextLanguage: Language) => {
     writeLocalStorageValue(LANGUAGE_KEY, nextLanguage);
@@ -300,7 +300,7 @@ export default function HomePage() {
                 className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl text-white font-bold text-base glow-orange"
                 style={{ background: "var(--primary-container)", fontFamily: "var(--font-display)", textDecoration: "none" }}
               >
-                <Sparkles size={18} />
+                <Sparkles size="1.125rem" />
                 {copy.hero.primaryCta}
               </a>
               <a
@@ -315,7 +315,7 @@ export default function HomePage() {
                 }}
               >
                 {copy.hero.secondaryCta}
-                <ArrowRight size={18} />
+                <ArrowRight size="1.125rem" />
               </a>
             </div>
           </motion.div>
@@ -414,7 +414,7 @@ export default function HomePage() {
                   className="inline-flex items-center gap-2 px-4 py-2 rounded-full"
                   style={{ background: "rgba(242, 114, 32, 0.12)", color: "var(--primary-container)" }}
                 >
-                  <Music2 size={14} />
+                  <Music2 size="0.875rem" />
                   {copy.prayer.musicLabel}: {trackLabel} · {isMuted ? copy.prayer.musicOff : copy.prayer.musicOn}
                 </div>
                 <div
@@ -562,7 +562,7 @@ export default function HomePage() {
                     onChange={(event) => setAnonymous(event.target.checked)}
                     style={{ accentColor: "#f27220", width: 16, height: 16 }}
                   />
-                  <UserX size={16} />
+                  <UserX size="1rem" />
                   <span style={{ color: "var(--on-surface)", fontFamily: "var(--font-body)" }}>{copy.prayer.anonymous}</span>
                 </label>
               </div>
@@ -580,7 +580,7 @@ export default function HomePage() {
                     opacity: (!selectedPreset && !customText.trim()) || grove.thanks ? 0.6 : 1,
                   }}
                 >
-                  <Sparkles size={16} />
+                  <Sparkles size="1rem" />
                   {copy.prayer.submit}
                 </button>
 
@@ -595,7 +595,7 @@ export default function HomePage() {
                     fontFamily: "var(--font-display)",
                   }}
                 >
-                  {isMuted ? <Play size={16} /> : <Pause size={16} />}
+                  {isMuted ? <Play size="1rem" /> : <Pause size="1rem" />}
                   {copy.prayer.musicLabel}: {isMuted ? copy.prayer.musicOff : copy.prayer.musicOn}
                 </button>
               </div>
@@ -636,7 +636,7 @@ export default function HomePage() {
                   boxShadow: "0 0 28px rgba(242, 114, 32, 0.25)",
                 }}
                 className="rounded-3xl overflow-hidden flex flex-col cursor-pointer"
-                style={{ background: "var(--surface-container)", border: "1px solid rgba(88, 66, 55, 0.12)", containerType: "inline-size" }}
+                style={{ background: "var(--surface-container)", border: "1px solid rgba(88, 66, 55, 0.12)" }}
                 role="button"
                 tabIndex={0}
                 aria-label={`${member.ign} — ${ROSTER_MODAL_COPY[language].viewDetail}`}
@@ -658,7 +658,7 @@ export default function HomePage() {
                 >
                   <div className="absolute inset-0 bg-gradient-to-b from-transparent via-transparent to-black/70" />
                   <span
-                    className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full px-3 py-1 text-[11px] font-bold"
+                    className="absolute right-3 top-3 inline-flex items-center gap-1 rounded-full px-3 py-1 text-[0.6875rem] font-bold"
                     style={{
                       background: "rgba(14,14,14,0.7)",
                       color: "var(--primary-container)",
@@ -666,14 +666,13 @@ export default function HomePage() {
                       fontFamily: "var(--font-display)",
                     }}
                   >
-                    <Trophy size={12} />
+                    <Trophy size="0.75rem" />
                     {ROSTER_MODAL_COPY[language].viewDetail}
                   </span>
                   <div
-                    className="absolute bottom-4 left-4 right-4 text-center"
+                    className="absolute bottom-4 left-4 right-4 text-center text-[2.1rem]"
                     style={{
                       fontFamily: "var(--font-display)",
-                      fontSize: "clamp(1.1rem, 14cqw, 2.1rem)",
                       lineHeight: 1.1,
                       letterSpacing: "-0.02em",
                       fontWeight: 700,
@@ -755,7 +754,7 @@ export default function HomePage() {
                 whileHover={{ y: -6 }}
                 className="rounded-3xl overflow-hidden"
                 style={{
-                  minHeight: 320,
+                  minHeight: "20rem",
                   backgroundImage: `linear-gradient(180deg, rgba(8,8,8,0.16) 0%, rgba(8,8,8,0.92) 70%), url(${card.image})`,
                   backgroundSize: "cover",
                   backgroundPosition: "center",
@@ -765,7 +764,7 @@ export default function HomePage() {
               >
                 <div className="p-6 flex h-full flex-col justify-end gap-4">
                   <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold w-fit" style={{ background: "rgba(242, 114, 32, 0.18)", color: "var(--primary-container)", fontFamily: "var(--font-display)" }}>
-                    <Trophy size={14} />
+                    <Trophy size="0.875rem" />
                     {card.badge}
                   </div>
                   <div>
@@ -777,7 +776,7 @@ export default function HomePage() {
                     </p>
                   </div>
                   <p className="text-sm leading-relaxed" style={{ color: "var(--on-surface-variant)", fontFamily: "var(--font-body)" }}>
-                    {card.description}
+                    {card.description[language]}
                   </p>
                 </div>
               </motion.article>
@@ -802,7 +801,7 @@ export default function HomePage() {
             </h2>
           </motion.div>
 
-          <div className="grid grid-cols-1 xl:grid-cols-[280px_1fr_280px] gap-6 items-start">
+          <div className="grid grid-cols-1 xl:grid-cols-[17.5rem_minmax(0,1fr)_17.5rem] gap-6 items-start">
             <motion.aside
               initial={{ opacity: 0, x: -20 }}
               whileInView={{ opacity: 1, x: 0 }}
@@ -811,7 +810,7 @@ export default function HomePage() {
               style={{ background: "var(--surface-container)", border: "1px solid rgba(88, 66, 55, 0.1)" }}
             >
               <h3 className="text-xs font-bold uppercase tracking-[0.3em] flex items-center gap-2" style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)" }}>
-                <Trophy size={12} />
+                <Trophy size="0.75rem" />
                 {copy.wishes.topSupporters}
               </h3>
               {TOP_SUPPORTERS.map((supporter, index) => (

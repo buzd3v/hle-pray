@@ -66,7 +66,7 @@ export function RosterModal({ member, language, roleLabel, onClose }: RosterModa
               className="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center rounded-full"
               style={{ background: "rgba(14,14,14,0.7)", color: "var(--on-surface)", border: "1px solid rgba(255,255,255,0.12)" }}
             >
-              <X size={18} />
+              <X size="1.125rem" />
             </button>
 
             <div className="relative aspect-[4/3] w-full shrink-0">
@@ -113,7 +113,7 @@ export function RosterModal({ member, language, roleLabel, onClose }: RosterModa
                   className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.25em]"
                   style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)" }}
                 >
-                  <Trophy size={14} style={{ color: "var(--primary-container)" }} />
+                  <Trophy size="0.875rem" style={{ color: "var(--primary-container)" }} />
                   {copy.titles}
                 </h4>
                 <ul className="space-y-2">
@@ -151,7 +151,7 @@ export function RosterModal({ member, language, roleLabel, onClose }: RosterModa
                   className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-[0.25em]"
                   style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)" }}
                 >
-                  <Medal size={14} style={{ color: "var(--primary-container)" }} />
+                  <Medal size="0.875rem" style={{ color: "var(--primary-container)" }} />
                   {copy.awards}
                 </h4>
                 <ul className="space-y-2">

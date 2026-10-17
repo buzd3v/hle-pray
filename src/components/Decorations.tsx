@@ -11,8 +11,8 @@ interface ArchDecorationProps {
 export function ArchDecoration({ className = "", size = 120, animated = false }: ArchDecorationProps) {
   return (
     <svg
-      width={size}
-      height={size * 0.55}
+      width={`${size / 16}rem`}
+      height={`${(size * 0.55) / 16}rem`}
       viewBox="0 0 120 66"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -45,8 +45,8 @@ interface FlameProps {
 export function FlameIcon({ size = 24, color = "#f27220", className = "", animated = false }: FlameProps) {
   return (
     <motion.svg
-      width={size}
-      height={size}
+      width={`${size / 16}rem`}
+      height={`${size / 16}rem`}
       viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -80,8 +80,8 @@ interface OrangeIconProps {
 export function OrangeIcon({ size = 24, className = "", animated = false }: OrangeIconProps) {
   return (
     <motion.svg
-      width={size}
-      height={size}
+      width={`${size / 16}rem`}
+      height={`${size / 16}rem`}
       viewBox="0 0 24 24"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"
@@ -105,8 +105,8 @@ interface HLElogoProps {
 export function HLElogo({ size = 48, className = "" }: HLElogoProps) {
   return (
     <svg
-      width={size}
-      height={size}
+      width={`${size / 16}rem`}
+      height={`${size / 16}rem`}
       viewBox="0 0 48 48"
       fill="none"
       xmlns="http://www.w3.org/2000/svg"

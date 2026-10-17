@@ -113,33 +113,33 @@ export function NavBar({
               style={{
                 display: "flex",
                 alignItems: "center",
-                gap: "6px",
+                gap: "0.375rem",
                 background: "transparent",
                 border: "1px solid rgba(77,70,54,0.3)",
                 borderRadius: "4px",
-                padding: "6px 12px",
+                padding: "0.375rem 0.75rem",
                 color: "#e5e2e1",
                 cursor: "pointer",
-                fontSize: "14px",
+                fontSize: "0.875rem",
                 fontFamily: "var(--font-body)",
                 transition: "all 0.2s",
               }}
             >
-              <Globe size={14} />
-              <span style={{ fontSize: "16px" }}>{currentLanguage.flag}</span>
+              <Globe size="0.875rem" />
+              <span style={{ fontSize: "1rem" }}>{currentLanguage.flag}</span>
             </button>
 
             {langOpen ? (
               <div
                 style={{
                   position: "absolute",
-                  top: "calc(100% + 8px)",
+                  top: "calc(100% + 0.5rem)",
                   right: 0,
                   backgroundColor: "#1a1a1a",
                   border: "1px solid rgba(77,70,54,0.3)",
                   borderRadius: "4px",
                   overflow: "hidden",
-                  minWidth: "160px",
+                  minWidth: "10rem",
                   zIndex: 100,
                 }}
               >
@@ -153,20 +153,20 @@ export function NavBar({
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: "8px",
+                      gap: "0.5rem",
                       width: "100%",
-                      padding: "10px 14px",
+                      padding: "0.625rem 0.875rem",
                       background: language === option.value ? "rgba(230,195,89,0.1)" : "transparent",
                       border: "none",
                       color: language === option.value ? "#e6c359" : "#e5e2e1",
                       cursor: "pointer",
-                      fontSize: "14px",
+                      fontSize: "0.875rem",
                       fontFamily: "var(--font-body)",
                       textAlign: "left",
                       transition: "background 0.15s",
                     }}
                   >
-                    <span style={{ fontSize: "16px" }}>{option.flag}</span>
+                    <span style={{ fontSize: "1rem" }}>{option.flag}</span>
                     {option.label}
                   </button>
                 ))}
@@ -179,19 +179,19 @@ export function NavBar({
             style={{
               display: "flex",
               alignItems: "center",
-              gap: "6px",
+              gap: "0.375rem",
               background: isMuted ? "transparent" : "rgba(242, 114, 32, 0.12)",
               border: "1px solid rgba(77,70,54,0.3)",
               borderRadius: "4px",
-              padding: "6px 12px",
+              padding: "0.375rem 0.75rem",
               color: isMuted ? "#e5e2e1" : "#e6c359",
               cursor: "pointer",
-              fontSize: "14px",
+              fontSize: "0.875rem",
               fontFamily: "var(--font-body)",
               transition: "all 0.2s",
             }}
           >
-            <Music2 size={14} />
+            <Music2 size="0.875rem" />
             <span className="hidden md:inline">{isMuted ? "Muted" : "Music"}</span>
           </button>
         </div>

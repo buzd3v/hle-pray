@@ -63,7 +63,7 @@ export function GroveStage({
 
   return (
     <div
-      className="relative mx-auto h-[540px] max-w-6xl overflow-hidden rounded-3xl sm:h-[clamp(560px,82vh,760px)]"
+      className="relative mx-auto h-[540px] max-w-6xl overflow-hidden rounded-3xl sm:h-[clamp(35rem,82vh,47.5rem)]"
       style={{
         background: "#0d0f16",
         border: "1px solid rgba(242, 114, 32, 0.22)",
@@ -78,7 +78,7 @@ export function GroveStage({
 
       {/* title */}
       <div className="pointer-events-none absolute left-5 top-5 z-10 max-w-[15rem] sm:left-8 sm:top-7 sm:max-w-sm">
-        <p className="mb-2 text-[10px] uppercase tracking-[0.4em] sm:text-xs" style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)" }}>
+        <p className="mb-2 text-[0.625rem] uppercase tracking-[0.4em] sm:text-xs" style={{ color: "var(--tertiary)", fontFamily: "var(--font-display)" }}>
           {copy.eyebrow}
         </p>
         <h2
@@ -112,10 +112,10 @@ export function GroveStage({
           >
             <span className="hidden sm:inline">{step.label}</span>
             <span
-              className="flex h-5 w-5 items-center justify-center rounded-full text-[11px]"
+              className="flex h-5 w-5 items-center justify-center rounded-full text-[0.6875rem]"
               style={{ background: step.done ? "rgba(255,255,255,0.25)" : "rgba(242, 114, 32, 0.18)" }}
             >
-              {step.done ? <Check size={12} /> : index + 1}
+              {step.done ? <Check size="0.75rem" /> : index + 1}
             </span>
           </li>
         ))}
@@ -166,7 +166,7 @@ export function GroveStage({
               opacity: wished ? 0.6 : 1,
             }}
           >
-            <PenLine size={18} />
+            <PenLine size="1.125rem" />
             {copy.writeWish}
           </button>
         ) : (

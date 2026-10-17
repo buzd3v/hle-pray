@@ -70,7 +70,7 @@ export interface AchievementCard {
   title: string;
   year: string;
   badge: string;
-  description: string;
+  description: Record<Language, string>;
   image: string;
 }
 
@@ -215,7 +215,7 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
     },
     achievements: {
       title: "DANH HIỆU VÀ CỘT MỐC",
-      subtitle: "Khung danh hiệu để bạn thay ảnh, năm và chi tiết theo đúng bộ asset sau này.",
+      subtitle: "Những chiếc cúp của Hanwha Life Esports từ năm 2024 đến nay.",
       eyebrow: "Trophy room",
     },
     wishes: {
@@ -296,7 +296,7 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
     },
     achievements: {
       title: "ACHIEVEMENTS & MILESTONES",
-      subtitle: "A trophy wall you can update with the final image set, years and notes later.",
+      subtitle: "Hanwha Life Esports' trophies from 2024 to today.",
       eyebrow: "Trophy room",
     },
     wishes: {
@@ -377,7 +377,7 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
     },
     achievements: {
       title: "업적과 명예",
-      subtitle: "나중에 최종 이미지와 연도, 상세 내용을 바꾸기 쉬운 트로피 월입니다.",
+      subtitle: "2024년부터 현재까지 한화생명e스포츠가 들어 올린 트로피입니다.",
       eyebrow: "트로피 룸",
     },
     wishes: {
@@ -554,36 +554,52 @@ export const ROSTER_MEMBERS: RosterMember[] = [
 
 export const ACHIEVEMENT_CARDS: AchievementCard[] = [
   {
-    id: "lck-run",
-    title: "LCK Storyline",
-    year: "2025",
-    badge: "League run",
-    description: "A frame for your final trophy assets, series captions, and victory photos.",
-    image: "/hle-achievement-lck.jpg",
+    id: "lck-summer-2024",
+    title: "LCK Summer 2024",
+    year: "2024",
+    badge: "LCK Champion",
+    description: {
+      vi: "Danh hiệu LCK đầu tiên trong lịch sử HLE, sau chung kết 3–2 trước Gen.G.",
+      en: "HLE's first LCK title, won in a 3–2 final over Gen.G.",
+      ko: "젠지를 3–2로 꺾고 차지한 한화생명e스포츠의 첫 LCK 우승입니다.",
+    },
+    image: "/achievements/lck-summer-2024.jpg",
   },
   {
-    id: "msi-stage",
-    title: "MSI Stage",
+    id: "lck-cup-2025",
+    title: "LCK Cup 2025",
+    year: "2025",
+    badge: "LCK Champion",
+    description: {
+      vi: "Vô địch LCK Cup 2025 sau chung kết 3–2 trước Gen.G.",
+      en: "LCK Cup 2025 champions after a 3–2 final against Gen.G.",
+      ko: "젠지와의 결승에서 3–2로 승리해 2025 LCK컵을 우승했습니다.",
+    },
+    image: "/achievements/lck-cup-2025.jpg",
+  },
+  {
+    id: "first-stand-2025",
+    title: "First Stand 2025",
     year: "2025",
     badge: "International",
-    description: "Capture the team on the international stage with the exact match artwork later.",
-    image: "/hle-achievement-msi.jpg",
+    description: {
+      vi: "Chiếc cúp quốc tế đầu tiên của HLE, thắng Karmine Corp 3–1 ở chung kết.",
+      en: "HLE's first international trophy, beating Karmine Corp 3–1 in the final.",
+      ko: "카르민 코프를 3–1로 꺾고 들어 올린 한화생명e스포츠의 첫 국제 대회 우승입니다.",
+    },
+    image: "/achievements/first-stand-2025.jpg",
   },
   {
-    id: "worlds-dream",
-    title: "Worlds Dream",
+    id: "msi-2026",
+    title: "MSI 2026",
     year: "2026",
-    badge: "Global chase",
-    description: "A polished slot for Worlds ambitions, quotes, and the image you will add later.",
-    image: "/hle-achievement-worlds.jpg",
-  },
-  {
-    id: "legacy",
-    title: "Team Legacy",
-    year: "2026",
-    badge: "Legacy",
-    description: "Reserve this card for legacy milestones, milestones captions, and banner art.",
-    image: "/hle-achievement-legacy.jpg",
+    badge: "MSI Champion",
+    description: {
+      vi: "Vô địch MSI 2026 tại Daejeon, thắng Bilibili Gaming 3–2 trong chung kết.",
+      en: "MSI 2026 champions in Daejeon, beating Bilibili Gaming 3–2 in the final.",
+      ko: "대전에서 열린 MSI 2026 결승에서 빌리빌리 게이밍을 3–2로 꺾고 우승했습니다.",
+    },
+    image: "/achievements/msi-2026.jpg",
   },
 ];
 
