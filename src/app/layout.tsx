@@ -15,7 +15,7 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: "HLE Lucky Orange — Cam Trao Tay, May Mắn Đong Đầy",
+  title: "HLE Lucky Orange",
   description:
     "Cùng Soori hái cam may mắn và gửi lời chúc đến Hanwha Life Esports, với roster riêng, âm nhạc và 3 ngôn ngữ Việt - Anh - Hàn.",
 };
