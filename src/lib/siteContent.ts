@@ -178,7 +178,7 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
       thanksTitle: "Soori cảm ơn bạn!",
       thanksBody:
         "Quả cam may mắn và lời chúc của bạn đã được trao đến HLE. Chúc bạn thật nhiều may mắn, và hẹn gặp lại ở vườn cam nhé!",
-      thanksClose: "Hái thêm cam",
+      thanksClose: "Xem lời chúc",
       steps: ["Hái cam", "Gửi lời chúc", "Nhận may mắn"],
     },
     prayer: {
@@ -256,7 +256,7 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
       thanksTitle: "Thank you from Soori!",
       thanksBody:
         "Your lucky orange and your wish are on their way to HLE. Wishing you lots of luck, see you again in the grove!",
-      thanksClose: "Pick more oranges",
+      thanksClose: "See the wishes",
       steps: ["Pick an orange", "Send a wish", "Receive luck"],
     },
     prayer: {
@@ -334,7 +334,7 @@ export const SITE_COPY: Record<Language, SiteCopy> = {
       thanksTitle: "수리가 고마워해요!",
       thanksBody:
         "행운의 오렌지와 응원 메시지가 HLE에게 전달되었어요. 행운이 가득하길 바라요, 농장에서 또 만나요!",
-      thanksClose: "오렌지 더 따기",
+      thanksClose: "응원 메시지 보기",
       steps: ["오렌지 따기", "응원 보내기", "행운 받기"],
     },
     prayer: {

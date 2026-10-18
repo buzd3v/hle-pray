@@ -175,8 +175,8 @@ export default function HomePage() {
     writeLocalStorageValue(MUTED_KEY, String(!isMuted));
   };
 
-  const scrollTo = (target: HTMLElement | null) => {
-    target?.scrollIntoView({ behavior: "smooth", block: "center" });
+  const scrollTo = (target: HTMLElement | null, block: ScrollLogicalPosition = "center") => {
+    target?.scrollIntoView({ behavior: "smooth", block });
   };
 
   // Orange picked and wish sent (in either order): Soori thanks the visitor and dances.
@@ -211,6 +211,8 @@ export default function HomePage() {
     setGrove({ taken: false, wished: false, picking: false, thanks: false, bubble: "greeting" });
     setActiveTrack("ambient");
     groveRef.current?.stopCelebrate();
+    // The popup now leads to the wish letters, where the visitor's new wish shows up.
+    scrollTo(document.getElementById("section-wishes"), "start");
   };
 
   const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
