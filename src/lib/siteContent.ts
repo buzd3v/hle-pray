@@ -472,6 +472,7 @@ export const ROSTER_MEMBERS: RosterMember[] = [
       { year: "2025", event: "First Stand", team: "HLE", result: "champion" },
       { year: "2024", event: "LCK Summer", team: "HLE", result: "champion" },
       { year: "2022", event: "World Championship", team: "DRX", result: "champion" },
+      { year: "2026", event: "Asian Games", team: "KOR", result: "gold" },
     ],
     awards: [
       { year: "2022", name: "LCK Player of the Year" },
