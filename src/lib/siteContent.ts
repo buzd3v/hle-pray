@@ -594,13 +594,14 @@ export const ACHIEVEMENT_CARDS: AchievementCard[] = [
 export const MUSIC_TRACKS: MusicTrack[] = [
   {
     id: "ambient",
-    label: "Orchard ambience",
-    src: "/bgm-ambient.mp3",
+    label: "Know My Name – Worlds 2026 Anthem",
+    src: "/bgm-know-my-name.mp3",
   },
   {
+    // Same song on purpose: the thank-you moment keeps the music going instead of restarting it.
     id: "celebration",
-    label: "Thank-you tune",
-    src: "/bgm-thanks.mp3",
+    label: "Know My Name – Worlds 2026 Anthem",
+    src: "/bgm-know-my-name.mp3",
   },
 ];
 

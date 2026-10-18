@@ -143,8 +143,12 @@ export default function HomePage() {
     if (!audio) return;
 
     const track = MUSIC_TRACKS.find((item) => item.id === activeTrack) ?? MUSIC_TRACKS[0];
-    audio.src = track.src;
-    audio.loop = activeTrack === "ambient";
+    // Only swap the source when it really changes, so muting or switching to the same song doesn't restart it.
+    if (audio.dataset.track !== track.src) {
+      audio.dataset.track = track.src;
+      audio.src = track.src;
+    }
+    audio.loop = true;
     audio.muted = isMuted;
     audio.volume = 0.75;
 
